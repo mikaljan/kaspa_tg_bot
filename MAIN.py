@@ -2,13 +2,14 @@
 
 import os
 import re
+from contextlib import suppress
 
 import requests
 from telebot import TeleBot
 
 import KaspaInterface
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR
-from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
+from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC, normalize_hashrate
 
 bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
 assert os.environ.get('DONATION_ADDRESS') is not None
@@ -16,7 +17,7 @@ assert os.environ.get('DONATION_ADDRESS') is not None
 
 @bot.message_handler(commands=["donate"])
 def donate(e):
-    bot.send_message(e.chat.id, f"Please consider a donation: `{os.environ['DONATION_ADDRESS']}`",
+    bot.send_message(e.chat.id, f"Please consider a donation for KASPA-Bot: `{os.environ['DONATION_ADDRESS']}`",
                      parse_mode="Markdown")
 
 
@@ -70,17 +71,18 @@ def coin_supply(e):
 
 @bot.message_handler(commands=["price"])
 def price(e):
-    resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
-                        params={"ids": "kaspa",
-                                "vs_currencies": "usd"})
-    if resp.status_code == 200:
-        bot.send_message(e.chat.id, f'Current KAS price: *{resp.json()["kaspa"]["usd"] * 1.0e6:.0f} USD* per 1M KAS',
+    if kas_usd := _get_kas_price():
+        bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
                          parse_mode="Markdown")
+
 
 @bot.message_handler(commands=["mining_reward"])
 def mining_reward(e):
     params = " ".join(e.text.split(" ")[1:])
     match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
+
+    if match is None:
+        return
 
     suffix = match["suffix"]
     own_hashrate = match["dec"]
@@ -96,4 +98,57 @@ def mining_reward(e):
                      parse_mode="Markdown")
 
 
-bot.polling(none_stop=True)
+@bot.message_handler(commands=["id"])
+def id(e):
+    bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
+
+
+@bot.message_handler(commands=["mcap"])
+def mcap(e):
+    price_usd = _get_kas_price()
+
+    circ_supply = KaspaInterface.get_circulating_supply()
+
+    bot.send_message(e.chat.id,
+                     f"*$KAS MARKET CAP*\n"
+                     f"{'-' * 25}\n"
+                     f"```\n"
+                     f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
+                     f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
+                     f"\n```",
+                     parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["hashrate"])
+def hashrate(e):
+    stats = KaspaInterface.get_stats()
+    norm_hashrate = normalize_hashrate(int(stats['hashrate']))
+    bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown")
+
+
+def _get_kas_price():
+    resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
+                        params={"ids": "kaspa",
+                                "vs_currencies": "usd"})
+    if resp.status_code == 200:
+        return resp.json()["kaspa"]["usd"]
+
+
+# notifiy in channel on donation
+command = 'notifyUtxosChangedRequest'
+payload = {"addresses": [os.environ["DONATION_ADDRESS"]]}
+
+
+def callback_func(notification: dict):  # create a callback function to process the notifications
+    with suppress(Exception):
+        donation_amount = int(notification["utxosChangedNotification"]["added"][0]["utxoEntry"]["amount"]) / 100000000
+        if chat_id := os.environ.get("DONATION_ANNOUNCEMENT"):
+            bot.send_message(chat_id, f"*NEW DONATION. Thank you for {donation_amount} KAS!*",
+                             parse_mode="Markdown")
+
+
+# send the request to the server and retrive the response
+with KaspaInterface.kaspa_connection() as client:
+    # subscribe utxo change for donation address
+    resp = client.subscribe(command=command, payload=payload, callback=callback_func)
+    bot.polling(none_stop=True)
