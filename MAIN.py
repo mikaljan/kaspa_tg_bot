@@ -20,7 +20,7 @@ bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
 assert os.environ.get('DONATION_ADDRESS') is not None
 
 
-def check_debounce(seconds=300):
+def check_debounce(seconds=60 * 60):
     def wrapper(*args, **kwargs):
         cmd_id = f'{args[0].chat.id}{args[0].text.split("@")[0]}'
         if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds:
@@ -36,7 +36,11 @@ def check_debounce(seconds=300):
 
     return wrapper
 
+
 def check_param(*args):
+    if not args:
+        return False
+
     is_param = len(args[0].text.split(" ")) > 1
     if not is_param:
         try:
@@ -47,6 +51,16 @@ def check_param(*args):
 
     return is_param
 
+
+def check_only_private(*args):
+    if args[0].chat.type in ["group", "supergroup"]:
+        try:
+            bot.delete_message(args[0].chat.id, args[0].id)
+        except ApiTelegramException as e:
+            if "message can't be deleted for everyone" not in str(e):
+                print(e)
+    else:
+        return True
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
@@ -64,18 +78,35 @@ def callback_query_price_update(call):
 
     bot.answer_callback_query(call.id)
 
+@bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
+def callback_query_hashrate_update(call):
+    stats = KaspaInterface.get_stats()
+    norm_hashrate = normalize_hashrate(int(stats['hashrate']))
 
-@bot.message_handler(commands=["donate"], func=check_debounce())
+    try:
+        bot.edit_message_text(f"Current Hashrate: *{norm_hashrate}*", call.message.chat.id, call.message.id,
+                              parse_mode="Markdown",
+                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                       callback_data="cb_update_hashrate")]]))
+    except ApiTelegramException as e:
+        if "message is not modified" not in str(e):
+            raise
+
+    bot.answer_callback_query(call.id)
+
+
+@bot.message_handler(commands=["donate"], func=check_only_private)
 def donate(e):
     bot.send_message(e.chat.id, f"Please consider a donation for KASPA-Bot: `{os.environ['DONATION_ADDRESS']}`",
                      parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["balance"], func=check_param)
+@bot.message_handler(commands=["balance"], func=check_only_private)
 def balance(e):
     try:
         address = e.text.split(" ")[1]
     except IndexError:
+
         bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
         return
 
@@ -91,7 +122,7 @@ def balance(e):
                                 f"{balance:,} KAS```", parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["devfund"])
+@bot.message_handler(commands=["devfund"], func=check_only_private)
 def devfund(e):
     balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
     balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
@@ -105,7 +136,7 @@ def devfund(e):
                                 f"{balance_mining + balance_donation:,} KAS\n```", parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["coin_supply"], func=check_debounce())
+@bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
 def coin_supply(e):
     circulacting_supply = KaspaInterface.get_circulating_supply()
     bot.send_message(e.chat.id,
@@ -119,7 +150,6 @@ def coin_supply(e):
                      f"```", parse_mode="Markdown")
 
 
-
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
     if kas_usd := _get_kas_price():
@@ -129,7 +159,7 @@ def price(e):
                                                                                   callback_data="cb_update")]]))
 
 
-@bot.message_handler(commands=["mining_reward"], func=check_param)
+@bot.message_handler(commands=["mining_reward"], func=check_only_private)
 def mining_reward(e):
     params = " ".join(e.text.split(" ")[1:])
     match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
@@ -158,7 +188,7 @@ def id(e):
     bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
 
 
-@bot.message_handler(commands=["mcap"], func=check_debounce())
+@bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
 def mcap(e):
     price_usd = _get_kas_price()
 
@@ -174,35 +204,21 @@ def mcap(e):
                      parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["id"], func=check_debounce())
+@bot.message_handler(commands=["id"], func=check_only_private)
 def id(e):
     bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
 
 
-@bot.message_handler(commands=["mcap"], func=check_debounce())
-def mcap(e):
-    price_usd = _get_kas_price()
-
-    circ_supply = KaspaInterface.get_circulating_supply()
-
-    bot.send_message(e.chat.id,
-                     f"*$KAS MARKET CAP*\n"
-                     f"{'-' * 25}\n"
-                     f"```\n"
-                     f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
-                     f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
-                     f"\n```",
-                     parse_mode="Markdown")
-
-
-@bot.message_handler(commands=["hashrate"], func=check_debounce())
+@bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
     stats = KaspaInterface.get_stats()
     norm_hashrate = normalize_hashrate(int(stats['hashrate']))
-    bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown")
+    bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown",
+                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                              callback_data="cb_update_hashrate")]]))
 
 
-@bot.message_handler(commands=["buy"], func=check_debounce())
+@bot.message_handler(commands=["buy"], func=check_debounce(60 * 60))
 def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
@@ -232,7 +248,7 @@ def callback_func(notification: dict):  # create a callback function to process 
     with suppress(Exception):
         donation_amount = int(notification["utxosChangedNotification"]["added"][0]["utxoEntry"]["amount"]) / 100000000
         if chat_id := os.environ.get("DONATION_ANNOUNCEMENT"):
-            bot.send_message(chat_id, f"*NEW DONATION. Thank you for {donation_amount} KAS!*",
+            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS.",
                              parse_mode="Markdown")
 
 
