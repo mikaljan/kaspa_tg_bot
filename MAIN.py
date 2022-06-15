@@ -78,6 +78,7 @@ def callback_query_price_update(call):
 
     bot.answer_callback_query(call.id)
 
+
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
 def callback_query_hashrate_update(call):
     stats = KaspaInterface.get_stats()
@@ -157,6 +158,18 @@ def price(e):
                          parse_mode="Markdown",
                          reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                   callback_data="cb_update")]]))
+
+
+@bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
+def price(e):
+    bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
+                                f'*Kaspad (command line wallet)*:\n'
+                                f'  tinyurl.com/ym8sbas7\n'
+                                '*Kaspa for desktop (KDX)*:\n'
+                                '  https://kdx.app/\n'
+                                '*Web wallet*:\n'
+                                '  https://wallet.kaspanet.io/',
+                     parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["mining_reward"], func=check_only_private)
