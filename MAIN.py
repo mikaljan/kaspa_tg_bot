@@ -201,6 +201,13 @@ def id(e):
     bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
 
 
+@bot.message_handler(commands=["chart"])
+def chart(e):
+    bot.send_message(e.chat.id, f"See *KAS/USDT* Chart on exbitron:\n"
+                                f"    https://www.exbitron.com/trading/kasusdt",
+                     parse_mode="Markdown")
+
+
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
 def mcap(e):
     price_usd = _get_kas_price()
