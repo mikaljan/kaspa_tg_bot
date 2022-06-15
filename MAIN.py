@@ -95,7 +95,7 @@ def callback_query_hashrate_update(call):
     bot.answer_callback_query(call.id)
 
 
-@bot.message_handler(commands=["donate"], func=check_only_private)
+@bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def donate(e):
     bot.send_message(e.chat.id, f"Please consider a donation for KASPA-Bot: `{os.environ['DONATION_ADDRESS']}`",
                      parse_mode="Markdown")
