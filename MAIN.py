@@ -268,7 +268,11 @@ def callback_func(notification: dict):  # create a callback function to process 
     with suppress(Exception):
         donation_amount = int(notification["utxosChangedNotification"]["added"][0]["utxoEntry"]["amount"]) / 100000000
         if chat_id := os.environ.get("DONATION_ANNOUNCEMENT"):
-            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS.",
+            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS. ♥♥♥",
+                             parse_mode="Markdown")
+
+        if chat_id := os.environ.get("DONATION_ANNOUNCEMENT_2"):
+            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS. ♥♥♥",
                              parse_mode="Markdown")
 
 
