@@ -139,14 +139,19 @@ def devfund(e):
 
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
 def coin_supply(e):
-    circulacting_supply = KaspaInterface.get_circulating_supply()
+    try:
+        circulacting_supply = float(re.sub(r"<.*?>", "",
+                                           requests.get(r"https://katnip.cbytensky.org/totalcoins", verify=False).text))
+    except Exception:
+        circulacting_supply = KaspaInterface.get_circulating_supply()
+
     bot.send_message(e.chat.id,
                      f"```"
                      f"\n"
-                     f"Circulating supply  : {circulacting_supply:,} KAS\n"
-                     f"Uncirculated supply : {TOTAL_COIN_SUPPLY - circulacting_supply:,} KAS\n\n"
+                     f"Circulating supply  : {circulacting_supply:,.0f} KAS\n"
+                     f"Uncirculated supply : {TOTAL_COIN_SUPPLY - circulacting_supply:,.0f} KAS\n\n"
                      f"{'=' * 40}\n"
-                     f"Total supply        : {TOTAL_COIN_SUPPLY:,} KAS\n"
+                     f"Total supply        : {TOTAL_COIN_SUPPLY:,.0f} KAS\n"
                      f"Percent mined       : {round(circulacting_supply / TOTAL_COIN_SUPPLY * 100, 2)}%\n"
                      f"```", parse_mode="Markdown")
 
