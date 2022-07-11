@@ -253,7 +253,10 @@ def buy(e):
                      f"  https://txbit.io/\n"
                      f"----------------------------------\n"
                      f"  *Exibitron*\n"
-                     f"  https://www.exbitron.com/""", parse_mode="Markdown")
+                     f"  https://www.exbitron.com/\n"
+                     f"----------------------------------\n"
+                     f"  *vitex (DEX)*\n"
+                     f"  [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)", parse_mode="Markdown")
 
 
 def _get_kas_price():
