@@ -11,6 +11,7 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 import KaspaInterface
+import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC, normalize_hashrate
 
@@ -139,20 +140,19 @@ def devfund(e):
 
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
 def coin_supply(e):
-    try:
-        circulacting_supply = float(re.sub(r"<.*?>", "",
-                                           requests.get(r"https://katnip.cbytensky.org/totalcoins", verify=False).text))
-    except Exception:
-        circulacting_supply = KaspaInterface.get_circulating_supply()
+    coin_supply = kaspa_api.get_coin_supply()
+
+    circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
+    total_supply = float(coin_supply["maxSupply"]) / 100000000
 
     bot.send_message(e.chat.id,
                      f"```"
                      f"\n"
-                     f"Circulating supply  : {circulacting_supply:,.0f} KAS\n"
-                     f"Uncirculated supply : {TOTAL_COIN_SUPPLY - circulacting_supply:,.0f} KAS\n\n"
+                     f"Circulating supply  : {circulating_supply:,.0f} KAS\n"
+                     f"Uncirculated supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
                      f"{'=' * 40}\n"
-                     f"Total supply        : {TOTAL_COIN_SUPPLY:,.0f} KAS\n"
-                     f"Percent mined       : {round(circulacting_supply / TOTAL_COIN_SUPPLY * 100, 2)}%\n"
+                     f"Total supply        : {total_supply:,.0f} KAS\n"
+                     f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
                      f"```", parse_mode="Markdown")
 
 
