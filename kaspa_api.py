@@ -11,7 +11,10 @@ BASE_URL = "http://api.kaspa.org/"
 
 
 def __get(endpoint, params=None):
-    return _session.get(urljoin(BASE_URL, endpoint), params=params).json()
+    try:
+        return _session.get(urljoin(BASE_URL, endpoint), params=params).json()
+    except requests.exceptions.JSONDecodeError:
+        pass
 
 
 def get_coin_supply():

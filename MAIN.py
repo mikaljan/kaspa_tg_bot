@@ -82,19 +82,22 @@ def callback_query_price_update(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
 def callback_query_hashrate_update(call):
-    stats = KaspaInterface.get_stats()
-    norm_hashrate = normalize_hashrate(int(stats['hashrate']))
-
     try:
-        bot.edit_message_text(f"Current Hashrate: *{norm_hashrate}*", call.message.chat.id, call.message.id,
-                              parse_mode="Markdown",
-                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                       callback_data="cb_update_hashrate")]]))
-    except ApiTelegramException as e:
-        if "message is not modified" not in str(e):
-            raise
+        stats = KaspaInterface.get_stats()
+        norm_hashrate = normalize_hashrate(int(stats['hashrate']))
 
-    bot.answer_callback_query(call.id)
+        try:
+            bot.edit_message_text(f"Current Hashrate: *{norm_hashrate}*", call.message.chat.id, call.message.id,
+                                  parse_mode="Markdown",
+                                  reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                           callback_data="cb_update_hashrate")]]))
+        except ApiTelegramException as e:
+            if "message is not modified" not in str(e):
+                raise
+
+        bot.answer_callback_query(call.id)
+    except TimeoutError as e:
+        print(f'Exception raised: {e}')
 
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
@@ -108,7 +111,6 @@ def balance(e):
     try:
         address = e.text.split(" ")[1]
     except IndexError:
-
         bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
         return
 
@@ -126,8 +128,12 @@ def balance(e):
 
 @bot.message_handler(commands=["devfund"], func=check_only_private)
 def devfund(e):
-    balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
-    balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
+    try:
+        balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
+        balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
+    except TimeoutError as e:
+        print(f'Exception raised: {e}')
+        return
 
     bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
                                 f"```\nMINING\n"
@@ -141,6 +147,9 @@ def devfund(e):
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
 def coin_supply(e):
     coin_supply = kaspa_api.get_coin_supply()
+
+    if coin_supply is None:
+        return
 
     circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
     total_supply = float(coin_supply["maxSupply"]) / 100000000
@@ -158,12 +167,14 @@ def coin_supply(e):
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
-    if kas_usd := _get_kas_price():
-        bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
-                         parse_mode="Markdown",
-                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                  callback_data="cb_update")]]))
-
+    try:
+        if kas_usd := _get_kas_price():
+            bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
+                             parse_mode="Markdown",
+                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                      callback_data="cb_update")]]))
+    except Exception:
+        print(f'Raised exception: {e}')
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
@@ -179,26 +190,29 @@ def price(e):
 
 @bot.message_handler(commands=["mining_reward"], func=check_only_private)
 def mining_reward(e):
-    params = " ".join(e.text.split(" ")[1:])
-    match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
+    try:
+        params = " ".join(e.text.split(" ")[1:])
+        match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
 
-    if match is None:
-        return
+        if match is None:
+            return
 
-    suffix = match["suffix"]
-    own_hashrate = match["dec"]
+        suffix = match["suffix"]
+        own_hashrate = match["dec"]
 
-    stats = KaspaInterface.get_stats()
-    network_hashrate = int(stats['hashrate'])
-    own_hashrate = own_hashrate + suffix if suffix else own_hashrate
-    own_hashrate = hashrate_to_int(own_hashrate)
+        stats = KaspaInterface.get_stats()
+        network_hashrate = int(stats['hashrate'])
+        own_hashrate = own_hashrate + suffix if suffix else own_hashrate
+        own_hashrate = hashrate_to_int(own_hashrate)
 
-    if own_hashrate:
-        hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
-        rewards = get_mining_rewards(int(stats['daa_score']), hash_percent_of_network)
-        bot.send_message(e.chat.id,
-                         MINING_CALC(rewards),
-                         parse_mode="Markdown")
+        if own_hashrate:
+            hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
+            rewards = get_mining_rewards(int(stats['daa_score']), hash_percent_of_network)
+            bot.send_message(e.chat.id,
+                             MINING_CALC(rewards),
+                             parse_mode="Markdown")
+    except Exception:
+        print(f'Raised exception: {e}')
 
 
 @bot.message_handler(commands=["id"])
@@ -215,18 +229,21 @@ def chart(e):
 
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
 def mcap(e):
-    price_usd = _get_kas_price()
+    try:
+        price_usd = _get_kas_price()
 
-    circ_supply = KaspaInterface.get_circulating_supply()
+        circ_supply = KaspaInterface.get_circulating_supply()
 
-    bot.send_message(e.chat.id,
-                     f"*$KAS MARKET CAP*\n"
-                     f"{'-' * 25}\n"
-                     f"```\n"
-                     f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
-                     f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
-                     f"\n```",
-                     parse_mode="Markdown")
+        bot.send_message(e.chat.id,
+                         f"*$KAS MARKET CAP*\n"
+                         f"{'-' * 25}\n"
+                         f"```\n"
+                         f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
+                         f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
+                         f"\n```",
+                         parse_mode="Markdown")
+    except Exception:
+        print(f'Raised exception: {e}')
 
 
 @bot.message_handler(commands=["id"], func=check_only_private)
@@ -236,7 +253,11 @@ def id(e):
 
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
-    stats = KaspaInterface.get_stats()
+    try:
+        stats = KaspaInterface.get_stats()
+    except TimeoutError:
+        print(f'Raised exception: {e}')
+
     norm_hashrate = normalize_hashrate(int(stats['hashrate']))
     bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown",
                      reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
@@ -256,7 +277,8 @@ def buy(e):
                      f"  https://www.exbitron.com/\n"
                      f"----------------------------------\n"
                      f"  *vitex (DEX)*\n"
-                     f"  [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)", parse_mode="Markdown")
+                     f"  [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)",
+                     parse_mode="Markdown")
 
 
 def _get_kas_price():
