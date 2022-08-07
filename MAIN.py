@@ -276,6 +276,9 @@ def buy(e):
                      f"  *Exibitron*\n"
                      f"  https://www.exbitron.com/\n"
                      f"----------------------------------\n"
+                     f"  *cryptex24*\n"
+                     f"  [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)\n"
+                     f"----------------------------------\n"
                      f"  *vitex (DEX)*\n"
                      f"  [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)",
                      parse_mode="Markdown")
