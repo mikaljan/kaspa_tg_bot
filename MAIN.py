@@ -284,6 +284,19 @@ def buy(e):
                      parse_mode="Markdown")
 
 
+@bot.message_handler(commands=["languages"], func=check_debounce(60 * 60))
+def buy(e):
+    bot.send_message(e.chat.id,
+                     f"----------------------------------\n"
+                     f" *Kaspa in your language*\n"
+                     f"----------------------------------\n"
+                     f"🇨🇳 [https://t.me/kaspa_chinese/]\n"
+                     f"🇩🇪 [https://t.me/KaspaGerman/]\n"
+                     f"🇷🇺 [https://t.me/kaspa_rus/]\n"
+                     f"🇹🇷 [https://t.me/kaspa_turkish/]",
+                     parse_mode="Markdown")
+
+
 def _get_kas_price():
     resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
                         params={"ids": "kaspa",
