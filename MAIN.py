@@ -168,7 +168,7 @@ def coin_supply(e):
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
     if e.chat.id == -1001589070884:
-        bot.send_message(e.chat.id, 'f💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+        bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
     else:
         try:
             if kas_usd := _get_kas_price():
@@ -303,8 +303,8 @@ def buy(e):
                      f"🇯🇵 [https://t.me/Kaspa_Japan]\n"
                      f"🇳🇱 [https://t.me/Kaspa_Dutch/]\n"
                      f"🇷🇺 [https://t.me/kaspa_rus/]\n"
-                     f"🇹🇷 [https://t.me/kaspa_turkish/]\n"
-                     f"🇪🇸 [https://t.me/kaspaesp]",
+                     f"🇪🇸 [https://t.me/kaspaesp]\n"
+                     f"🇹🇷 [https://t.me/kaspa_turkish/]",
                      parse_mode="Markdown")
 
 
