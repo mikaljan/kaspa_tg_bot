@@ -167,17 +167,20 @@ def coin_supply(e):
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
-    try:
-        if kas_usd := _get_kas_price():
-            bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
-                             parse_mode="Markdown",
-                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                      callback_data="cb_update")]]))
-    except Exception:
-        print(f'Raised exception: {e}')
+    if e.chat.id == -1001589070884:
+        bot.send_message(e.chat.id, 'f💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+    else:
+        try:
+            if kas_usd := _get_kas_price():
+                bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
+                                 parse_mode="Markdown",
+                                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                          callback_data="cb_update")]]))
+        except Exception:
+            print(f'Raised exception: {e}')
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def price(e):
+def wallet(e):
     bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
                                 f'*Kaspad (command line wallet)*:\n'
                                 f'  tinyurl.com/ym8sbas7\n'
