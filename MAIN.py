@@ -25,7 +25,8 @@ assert os.environ.get('DONATION_ADDRESS') is not None
 def check_debounce(seconds=60 * 60):
     def wrapper(*args, **kwargs):
         cmd_id = f'{args[0].chat.id}{args[0].text.split("@")[0]}'
-        if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds:
+
+        if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds or args[0].chat.id == -1001208691907:
             DEBOUNCE_CACHE[cmd_id] = time.time()
         else:
             try:
