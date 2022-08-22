@@ -4,6 +4,7 @@ import os
 import re
 import time
 from contextlib import suppress
+from datetime import datetime
 
 import requests
 from telebot import TeleBot
@@ -178,6 +179,64 @@ def price(e):
                                                                                           callback_data="cb_update")]]))
         except Exception:
             print(f'Raised exception: {e}')
+
+
+def get_coin_info():
+    resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
+                        params={"tickers": False,
+                                "community_data": False,
+                                "developer_data": False})
+
+    return resp.json()
+
+
+def get_ath_message(name):
+    coin = name
+
+    try:
+        coin_info = get_coin_info()
+    except Exception:
+        return
+
+    if not coin_info:
+        return
+
+    try:
+        symbol = coin_info['tickers'][0]['base']
+    except (ValueError, IndexError):
+        symbol = coin.upper()
+
+    ath_price = coin_info['market_data']['ath']['usd']
+    ath_date = datetime.fromisoformat(coin_info['market_data']['ath_date']['usd'][:-1] + "+00:00")
+    ath_change_percentage = coin_info['market_data']['ath_change_percentage']['usd']
+
+    message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
+              f"{'-' * 40}\n" \
+              f"*Current price:* \n      {coin_info['market_data']['current_price']['usd']:,} USD\n\n" \
+              f" *ATH Price:*\n" \
+              f"      {ath_price} USD\n" \
+              f" *ATH Date* :\n" \
+              f"      {ath_date:%Y-%m-%d %H:%M}\n" \
+              f" *ATH Change ▼*:\n" \
+              f"      {ath_change_percentage:0.2f} %"
+
+    return message
+
+
+@bot.message_handler(commands=["ath"], func=check_debounce(DEBOUNCE_SECS_PRICE))
+def ath(e):
+    if e.chat.id == -1001589070884:
+        bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+    else:
+        try:
+            message = get_ath_message("kas")
+        except Exception as e:
+            print(f"Error creating ATH message: {e}")
+            return
+        if message:
+            bot.send_message(e.chat.id, message,
+                             parse_mode="Markdown")
+
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def wallet(e):
