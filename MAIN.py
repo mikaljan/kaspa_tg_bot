@@ -68,18 +68,21 @@ def check_only_private(*args):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
 def callback_query_price_update(call):
-    if kas_usd := _get_kas_price():
-        message = f'Current KAS price: <b>{kas_usd * 1.0e6:.0f} USD</b> per 1M KAS'
-        try:
-            bot.edit_message_text(message, call.message.chat.id, call.message.id,
-                                  parse_mode="HTML",
-                                  reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                           callback_data="cb_update")]]))
-        except ApiTelegramException as e:
-            if "message is not modified" not in str(e):
-                raise
+    try:
+        if kas_usd := _get_kas_price():
+            message = f'Current KAS price: <b>{kas_usd * 1.0e6:.0f} USD</b> per 1M KAS'
+            try:
+                bot.edit_message_text(message, call.message.chat.id, call.message.id,
+                                      parse_mode="HTML",
+                                      reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                               callback_data="cb_update")]]))
+            except ApiTelegramException as e:
+                if "message is not modified" not in str(e):
+                    raise
 
-    bot.answer_callback_query(call.id)
+        bot.answer_callback_query(call.id)
+    except Exception as e:
+        print(str(e))
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
@@ -100,6 +103,8 @@ def callback_query_hashrate_update(call):
         bot.answer_callback_query(call.id)
     except TimeoutError as e:
         print(f'Exception raised: {e}')
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
@@ -111,144 +116,168 @@ def donate(e):
 @bot.message_handler(commands=["balance"], func=check_only_private)
 def balance(e):
     try:
-        address = e.text.split(" ")[1]
-    except IndexError:
-        bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
-        return
+        try:
+            address = e.text.split(" ")[1]
+        except IndexError:
+            bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
+            return
 
-    if re.match(r"kaspa:[a-zA-Z0-9]{51}", address) is None:
-        bot.send_message(e.chat.id, "kaspa wallet not valid.")
-        return
+        if re.match(r"kaspa:[a-zA-Z0-9]{51}", address) is None:
+            bot.send_message(e.chat.id, "kaspa wallet not valid.")
+            return
 
-    balance = KaspaInterface.get_balance(address)
+        balance = KaspaInterface.get_balance(address)
 
-    bot.send_message(e.chat.id, f"```\nBalance for\n"
-                                f"  {address}\n"
-                                f"{60 * '-'}\n"
-                                f"{balance:,} KAS```", parse_mode="Markdown")
+        bot.send_message(e.chat.id, f"```\nBalance for\n"
+                                    f"  {address}\n"
+                                    f"{60 * '-'}\n"
+                                    f"{balance:,} KAS```", parse_mode="Markdown")
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["devfund"], func=check_only_private)
 def devfund(e):
     try:
-        balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
-        balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
-    except TimeoutError as e:
-        print(f'Exception raised: {e}')
-        return
+        try:
+            balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
+            balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
+        except TimeoutError as e:
+            print(f'Exception raised: {e}')
+            return
 
-    bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
-                                f"```\nMINING\n"
-                                f"    {balance_mining:,} KAS\n"
-                                f"DONATION\n"
-                                f"    {balance_donation:,} KAS\n"
-                                f"{30 * '-'}\n"
-                                f"{balance_mining + balance_donation:,} KAS\n```", parse_mode="Markdown")
+        bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
+                                    f"```\nMINING\n"
+                                    f"    {balance_mining:,} KAS\n"
+                                    f"DONATION\n"
+                                    f"    {balance_donation:,} KAS\n"
+                                    f"{30 * '-'}\n"
+                                    f"{balance_mining + balance_donation:,} KAS\n```", parse_mode="Markdown")
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
 def coin_supply(e):
-    coin_supply = kaspa_api.get_coin_supply()
+    try:
+        coin_supply = kaspa_api.get_coin_supply()
 
-    if coin_supply is None:
-        return
+        if coin_supply is None:
+            return
 
-    circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
-    total_supply = float(coin_supply["maxSupply"]) / 100000000
+        circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
+        total_supply = float(coin_supply["maxSupply"]) / 100000000
 
-    bot.send_message(e.chat.id,
-                     f"```"
-                     f"\n"
-                     f"Circulating supply  : {circulating_supply:,.0f} KAS\n"
-                     f"Uncirculated supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
-                     f"{'=' * 40}\n"
-                     f"Total supply        : {total_supply:,.0f} KAS\n"
-                     f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
-                     f"```", parse_mode="Markdown")
+        bot.send_message(e.chat.id,
+                         f"```"
+                         f"\n"
+                         f"Circulating supply  : {circulating_supply:,.0f} KAS\n"
+                         f"Uncirculated supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
+                         f"{'=' * 40}\n"
+                         f"Total supply        : {total_supply:,.0f} KAS\n"
+                         f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
+                         f"```", parse_mode="Markdown")
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
-    if e.chat.id == -1001589070884:
-        bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
-    else:
-        try:
-            if kas_usd := _get_kas_price():
-                bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
-                                 parse_mode="Markdown",
-                                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                          callback_data="cb_update")]]))
-        except Exception:
-            print(f'Raised exception: {e}')
+    try:
+        if e.chat.id == -1001589070884:
+            bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+        else:
+            try:
+                if kas_usd := _get_kas_price():
+                    bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
+                                     parse_mode="Markdown",
+                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                              callback_data="cb_update")]]))
+            except Exception:
+                print(f'Raised exception: {e}')
+    except Exception as e:
+        print(str(e))
 
 
 def get_coin_info():
-    resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
-                        params={"tickers": False,
-                                "community_data": False,
-                                "developer_data": False})
+    try:
+        resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
+                            params={"tickers": False,
+                                    "community_data": False,
+                                    "developer_data": False})
 
-    return resp.json()
+        return resp.json()
+    except Exception as e:
+        print(str(e))
 
 
 def get_ath_message(name):
-    coin = name
-
     try:
-        coin_info = get_coin_info()
-    except Exception:
-        return
+        coin = name
 
-    if not coin_info:
-        return
+        try:
+            coin_info = get_coin_info()
+        except Exception:
+            return
 
-    try:
-        symbol = coin_info['tickers'][0]['base']
-    except (ValueError, IndexError):
-        symbol = coin.upper()
+        if not coin_info:
+            return
 
-    ath_price = coin_info['market_data']['ath']['usd']
-    ath_date = datetime.fromisoformat(coin_info['market_data']['ath_date']['usd'][:-1] + "+00:00")
-    ath_change_percentage = coin_info['market_data']['ath_change_percentage']['usd']
+        try:
+            symbol = coin_info['tickers'][0]['base']
+        except (ValueError, IndexError):
+            symbol = coin.upper()
 
-    message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
-              f"{'-' * 40}\n" \
-              f"*Current price:* \n      {coin_info['market_data']['current_price']['usd']:,} USD\n\n" \
-              f" *ATH Price:*\n" \
-              f"      {ath_price} USD\n" \
-              f" *ATH Date* :\n" \
-              f"      {ath_date:%Y-%m-%d %H:%M}\n" \
-              f" *ATH Change ▼*:\n" \
-              f"      {ath_change_percentage:0.2f} %"
+        ath_price = coin_info['market_data']['ath']['usd']
+        ath_date = datetime.fromisoformat(coin_info['market_data']['ath_date']['usd'][:-1] + "+00:00")
+        ath_change_percentage = coin_info['market_data']['ath_change_percentage']['usd']
 
-    return message
+        message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
+                  f"{'-' * 40}\n" \
+                  f"*Current price:* \n      {coin_info['market_data']['current_price']['usd']:,} USD\n\n" \
+                  f" *ATH Price:*\n" \
+                  f"      {ath_price} USD\n" \
+                  f" *ATH Date* :\n" \
+                  f"      {ath_date:%Y-%m-%d %H:%M}\n" \
+                  f" *ATH Change ▼*:\n" \
+                  f"      {ath_change_percentage:0.2f} %"
+
+        return message
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["ath"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def ath(e):
-    if e.chat.id == -1001589070884:
-        bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
-    else:
-        try:
-            message = get_ath_message("kas")
-        except Exception as e:
-            print(f"Error creating ATH message: {e}")
-            return
-        if message:
-            bot.send_message(e.chat.id, message,
-                             parse_mode="Markdown")
+    try:
+        if e.chat.id == -1001589070884:
+            bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+        else:
+            try:
+                message = get_ath_message("kas")
+            except Exception as e:
+                print(f"Error creating ATH message: {e}")
+                return
+            if message:
+                bot.send_message(e.chat.id, message,
+                                 parse_mode="Markdown")
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def wallet(e):
-    bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
-                                f'*Kaspad (command line wallet)*:\n'
-                                f'  tinyurl.com/ym8sbas7\n'
-                                '*Kaspa for desktop (KDX)*:\n'
-                                '  https://kdx.app/\n'
-                                '*Web wallet*:\n'
-                                '  https://wallet.kaspanet.io/',
-                     parse_mode="Markdown")
+    try:
+        bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
+                                    f'*Kaspad (command line wallet)*:\n'
+                                    f'  tinyurl.com/ym8sbas7\n'
+                                    '*Kaspa for desktop (KDX)*:\n'
+                                    '  https://kdx.app/\n'
+                                    '*Web wallet*:\n'
+                                    '  https://wallet.kaspanet.io/',
+                         parse_mode="Markdown")
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["mining_reward"], func=check_only_private)
@@ -305,7 +334,7 @@ def mcap(e):
                          f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
                          f"\n```",
                          parse_mode="Markdown")
-    except Exception:
+    except Exception as e:
         print(f'Raised exception: {e}')
 
 
@@ -317,14 +346,17 @@ def id(e):
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
     try:
-        stats = KaspaInterface.get_stats()
-    except TimeoutError:
-        print(f'Raised exception: {e}')
+        try:
+            stats = KaspaInterface.get_stats()
+        except TimeoutError:
+            print(f'Raised exception: {e}')
 
-    norm_hashrate = normalize_hashrate(int(stats['hashrate']))
-    bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown",
-                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                              callback_data="cb_update_hashrate")]]))
+        norm_hashrate = normalize_hashrate(int(stats['hashrate']))
+        bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown",
+                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                  callback_data="cb_update_hashrate")]]))
+    except Exception as e:
+        print(str(e))
 
 
 @bot.message_handler(commands=["buy"], func=check_debounce(60 * 60))
@@ -371,11 +403,14 @@ def buy(e):
 
 
 def _get_kas_price():
-    resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
-                        params={"ids": "kaspa",
-                                "vs_currencies": "usd"})
-    if resp.status_code == 200:
-        return resp.json()["kaspa"]["usd"]
+    try:
+        resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
+                            params={"ids": "kaspa",
+                                    "vs_currencies": "usd"})
+        if resp.status_code == 200:
+            return resp.json()["kaspa"]["usd"]
+    except Exception as e:
+        print(str(e))
 
 
 # notifiy in channel on donation
