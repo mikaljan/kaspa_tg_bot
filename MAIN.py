@@ -298,12 +298,14 @@ def buy(e):
                      f"----------------------------------\n"
                      f"🇨🇳 [https://t.me/kaspa_chinese/]\n"
                      f"🇩🇪 [https://t.me/KaspaGerman/]\n"
+                     f"🇪🇸 [https://t.me/kaspaesp]\n"
                      f"🇮🇱 [https://t.me/kaspahebrewgroup/]\n"
                      f"🇮🇹 [https://t.me/kaspaitalia]\n"
                      f"🇯🇵 [https://t.me/Kaspa_Japan]\n"
+                     f"🇰🇷 [https://t.me/kaspa_korea]\n"
+                     f"🇵🇱 [https://t.me/Kaspa_Poland]\n"
                      f"🇳🇱 [https://t.me/Kaspa_Dutch/]\n"
                      f"🇷🇺 [https://t.me/kaspa_rus/]\n"
-                     f"🇪🇸 [https://t.me/kaspaesp]\n"
                      f"🇹🇷 [https://t.me/kaspa_turkish/]",
                      parse_mode="Markdown")
 
