@@ -69,16 +69,20 @@ def check_only_private(*args):
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
 def callback_query_price_update(call):
     try:
-        if kas_usd := _get_kas_price():
-            message = f'Current KAS price: <b>{kas_usd * 1.0e6:.0f} USD</b> per 1M KAS'
-            try:
-                bot.edit_message_text(message, call.message.chat.id, call.message.id,
-                                      parse_mode="HTML",
-                                      reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                               callback_data="cb_update")]]))
-            except ApiTelegramException as e:
-                if "message is not modified" not in str(e):
-                    raise
+        try:
+            message = get_price_message()
+
+        except Exception:
+            print(f'Raised exception: {e}')
+
+        try:
+            bot.edit_message_text(message, call.message.chat.id, call.message.id,
+                                  parse_mode="markdown",
+                                  reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                           callback_data="cb_update")]]))
+        except ApiTelegramException as e:
+            if "message is not modified" not in str(e):
+                raise
 
         bot.answer_callback_query(call.id)
     except Exception as e:
@@ -185,14 +189,16 @@ def coin_supply(e):
 def price(e):
     try:
         if e.chat.id == -1001589070884:
-            bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+            bot.send_message(e.chat.id,
+                             f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
-                if kas_usd := _get_kas_price():
-                    bot.send_message(e.chat.id, f'Current KAS price: *{kas_usd * 1.0e6:.0f} USD* per 1M KAS',
-                                     parse_mode="Markdown",
-                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                              callback_data="cb_update")]]))
+                msg = get_price_message()
+
+                bot.send_message(e.chat.id, msg,
+                                 parse_mode="Markdown",
+                                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                          callback_data="cb_update")]]))
             except Exception:
                 print(f'Raised exception: {e}')
     except Exception as e:
@@ -228,13 +234,13 @@ def get_ath_message(name):
         except (ValueError, IndexError):
             symbol = coin.upper()
 
-        ath_price = coin_info['market_data']['ath']['usd']
+        ath_price = round(coin_info['market_data']['ath']['usd'], 6)
         ath_date = datetime.fromisoformat(coin_info['market_data']['ath_date']['usd'][:-1] + "+00:00")
         ath_change_percentage = coin_info['market_data']['ath_change_percentage']['usd']
 
         message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
                   f"{'-' * 40}\n" \
-                  f"*Current price:* \n      {coin_info['market_data']['current_price']['usd']:,} USD\n\n" \
+                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'],6):,} USD\n\n" \
                   f" *ATH Price:*\n" \
                   f"      {ath_price} USD\n" \
                   f" *ATH Date* :\n" \
@@ -251,7 +257,8 @@ def get_ath_message(name):
 def ath(e):
     try:
         if e.chat.id == -1001589070884:
-            bot.send_message(e.chat.id, f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+            bot.send_message(e.chat.id,
+                             f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
                 message = get_ath_message("kas")
@@ -400,6 +407,37 @@ def buy(e):
                      f"🇷🇺 [https://t.me/kaspa_rus/]\n"
                      f"🇹🇷 [https://t.me/kaspa_turkish/]",
                      parse_mode="Markdown")
+
+
+def get_price_message():
+    coin = "kaspa"
+    coin_info = get_coin_info()
+
+    if not coin_info:
+        return
+
+    try:
+        symbol = coin_info['tickers'][0]['base']
+    except (ValueError, IndexError):
+        symbol = coin.upper()
+
+    price_change_1h = coin_info['market_data']['price_change_percentage_1h_in_currency']['usd']
+    price_change_24h = coin_info['market_data']['price_change_percentage_24h_in_currency']['usd']
+    price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency']['usd']
+
+    message = f"📈 Price Update for 📈\n" \
+              f"  *{symbol} - {coin_info['name']}*\n" \
+              f"{'-' * 40}\n" \
+              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'],6)} USD*\n\n" \
+              f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
+              f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
+              f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n```" \
+        # f"MCAP  : {coin_info['market_data']['market_cap'].get('usd', 0):,} USD\n" \
+    # f"FDV   : {coin_info['market_data']['fully_diluted_valuation'].get('usd', 0):,} USD\n" \
+    # f"Circ. Supply:\n  {coin_info['market_data']['circulating_supply'] or 0:,}\n" \
+    # f"Total Supply:\n  {coin_info['market_data']['total_supply'] or 0:,}\n```"
+
+    return message
 
 
 def _get_kas_price():
