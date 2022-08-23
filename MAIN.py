@@ -240,9 +240,9 @@ def get_ath_message(name):
 
         message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
                   f"{'-' * 40}\n" \
-                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'],6):,} USD\n\n" \
+                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'],6):0.6f} USD\n\n" \
                   f" *ATH Price:*\n" \
-                  f"      {ath_price} USD\n" \
+                  f"      {ath_price:0.6f} USD\n" \
                   f" *ATH Date* :\n" \
                   f"      {ath_date:%Y-%m-%d %H:%M}\n" \
                   f" *ATH Change ▼*:\n" \
@@ -428,7 +428,7 @@ def get_price_message():
     message = f"📈 Price Update for 📈\n" \
               f"  *{symbol} - {coin_info['name']}*\n" \
               f"{'-' * 40}\n" \
-              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'],6)} USD*\n\n" \
+              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'],6):0.6f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
               f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
               f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n```" \
