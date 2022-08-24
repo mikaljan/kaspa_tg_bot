@@ -329,7 +329,9 @@ def chart(e):
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
 def mcap(e):
     try:
-        price_usd = _get_kas_price()
+        kaspa_info = get_coin_info()
+        price_usd = kaspa_info["market_data"]["current_price"]["usd"]
+        rank = kaspa_info["market_data"]["market_cap_rank"]
 
         circ_supply = KaspaInterface.get_circulating_supply()
 
@@ -337,6 +339,7 @@ def mcap(e):
                          f"*$KAS MARKET CAP*\n"
                          f"{'-' * 25}\n"
                          f"```\n"
+                         f"Coingecko Market cap rank : {rank}\n"
                          f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
                          f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
                          f"\n```",
@@ -425,8 +428,10 @@ def get_price_message():
     price_change_24h = coin_info['market_data']['price_change_percentage_24h_in_currency']['usd']
     price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency']['usd']
 
+    rank = coin_info["market_data"]["market_cap_rank"]
+
     message = f"📈 Price Update for 📈\n" \
-              f"  *{symbol} - {coin_info['name']}*\n" \
+              f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
               f"{'-' * 40}\n" \
               f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'],6):0.6f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
