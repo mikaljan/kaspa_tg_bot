@@ -473,8 +473,49 @@ def callback_func(notification: dict):  # create a callback function to process 
                              parse_mode="Markdown")
 
 
+import requests
+
+h = {
+"Accept": "application/json",
+"Accept-Encoding": "gzip, deflate, br",
+"Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+"Connection": "keep-alive",
+    "Domain": "app",
+"Host": "api.poolo.io",
+"If-None-Match": 'W/"15a8-/QyElDsLF5Q4wnAxTAVyE5NRj9o"',
+"Origin": "https://app.poolo.io",
+"Referer": "https://app.poolo.io/",
+"sec-ch-ua": '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
+"sec-ch-ua-mobile": '?0',
+"sec-ch-ua-platform": '"Windows"',
+"Sec-Fetch-Dest": "empty",
+"Sec-Fetch-Mode": "cors",
+"Sec-Fetch-Site": "same-site",
+"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+"x-sender-address": "Address undefined"}
+
+
+@bot.message_handler(commands=["listingpool"], func=check_debounce(60 * 60))
+def listingpool(e):
+    print(requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/contributions",
+                 headers=h, allow_redirects=True))
+    d = requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/sync",
+                 headers=h, allow_redirects=True).json()
+
+    bot.send_message(e.chat.id,
+                     f'*{d["data"]["title"]}*\n\n'
+                                                   f'End date: {d["data"]["endDate"][:19]}\n'
+    f'Pool: {d["data"]["verifiedContributedAmount"]} USD / {d["data"]["poolAmount"]}\n USD' \
+    f'   => *{d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100:.02f} %*',
+    parse_mode="Markdown")
+
+
+
 # send the request to the server and retrive the response
 with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
     resp = client.subscribe(command=command, payload=payload, callback=callback_func)
     bot.polling(none_stop=True)
+
+
+
