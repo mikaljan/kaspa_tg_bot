@@ -6,7 +6,6 @@ import time
 from contextlib import suppress
 from datetime import datetime
 
-import requests
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -240,7 +239,7 @@ def get_ath_message(name):
 
         message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
                   f"{'-' * 40}\n" \
-                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'],6):0.6f} USD\n\n" \
+                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'], 6):0.6f} USD\n\n" \
                   f" *ATH Price:*\n" \
                   f"      {ath_price:0.6f} USD\n" \
                   f" *ATH Date* :\n" \
@@ -356,13 +355,10 @@ def id(e):
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
     try:
-        try:
-            stats = KaspaInterface.get_stats()
-        except TimeoutError:
-            print(f'Raised exception: {e}')
-
-        norm_hashrate = normalize_hashrate(int(stats['hashrate']))
-        bot.send_message(e.chat.id, f"Current Hashrate: *{norm_hashrate}*", parse_mode="Markdown",
+        resp = requests.get("https://kaspa.herokuapp.com/info/hashrate")
+        data = resp.json()
+        hashrate = data["hashrate"]
+        bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
                          reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                   callback_data="cb_update_hashrate")]]))
     except Exception as e:
@@ -433,7 +429,7 @@ def get_price_message():
     message = f"📈 Price Update for 📈\n" \
               f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
               f"{'-' * 40}\n" \
-              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'],6):0.6f} USD*\n\n" \
+              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.6f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
               f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
               f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n```" \
@@ -476,39 +472,48 @@ def callback_func(notification: dict):  # create a callback function to process 
 import requests
 
 h = {
-"Accept": "application/json",
-"Accept-Encoding": "gzip, deflate, br",
-"Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-"Connection": "keep-alive",
+    "Accept": "application/json",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "keep-alive",
     "Domain": "app",
-"Host": "api.poolo.io",
-"If-None-Match": 'W/"15a8-/QyElDsLF5Q4wnAxTAVyE5NRj9o"',
-"Origin": "https://app.poolo.io",
-"Referer": "https://app.poolo.io/",
-"sec-ch-ua": '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
-"sec-ch-ua-mobile": '?0',
-"sec-ch-ua-platform": '"Windows"',
-"Sec-Fetch-Dest": "empty",
-"Sec-Fetch-Mode": "cors",
-"Sec-Fetch-Site": "same-site",
-"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
-"x-sender-address": "Address undefined"}
+    "Host": "api.poolo.io",
+    "If-None-Match": 'W/"15a8-/QyElDsLF5Q4wnAxTAVyE5NRj9o"',
+    "Origin": "https://app.poolo.io",
+    "Referer": "https://app.poolo.io/",
+    "sec-ch-ua": '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
+    "sec-ch-ua-mobile": '?0',
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+    "x-sender-address": "Address undefined"}
 
 
 @bot.message_handler(commands=["listingpool"], func=check_debounce(60 * 60))
 def listingpool(e):
     print(requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/contributions",
-                 headers=h, allow_redirects=True))
+                       headers=h, allow_redirects=True))
     d = requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/sync",
-                 headers=h, allow_redirects=True).json()
+                     headers=h, allow_redirects=True).json()
+
+    percent = d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100
+
+    print(percent)
+
+    dark_fields = round(percent / 10)
+    light_fields = 10 - dark_fields
+
+    dark_fields = '🟩'*dark_fields
+    light_fields = '⬜️'*light_fields
 
     bot.send_message(e.chat.id,
                      f'*{d["data"]["title"]}*\n\n'
-                                                   f'End date: {d["data"]["endDate"][:19]}\n'
-    f'Pool: {d["data"]["verifiedContributedAmount"]} USD / {d["data"]["poolAmount"]}\n USD' \
-    f'   => *{d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100:.02f} %*',
-    parse_mode="Markdown")
-
+                     f'Link: [Link to Pool](https://app.poolo.io/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9)\n\n'
+                     f'Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n\n'
+                     f'Filled: {dark_fields}{light_fields} *{percent:.02f} %*',
+                     parse_mode="Markdown")
 
 
 # send the request to the server and retrive the response
@@ -516,6 +521,3 @@ with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
     resp = client.subscribe(command=command, payload=payload, callback=callback_func)
     bot.polling(none_stop=True)
-
-
-
