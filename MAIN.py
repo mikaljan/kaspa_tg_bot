@@ -511,6 +511,7 @@ def listingpool(e):
     bot.send_message(e.chat.id,
                      f'*{d["data"]["title"]}*\n\n'
                      f'Link: [Link to Pool](https://app.poolo.io/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9)\n\n'
+                     f'End date: {d["data"]["endDate"][:19]}\n\n'
                      f'Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n\n'
                      f'Filled: {dark_fields}{light_fields} *{percent:.02f} %*',
                      parse_mode="Markdown")
