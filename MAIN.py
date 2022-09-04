@@ -289,31 +289,32 @@ def wallet(e):
         print(str(e))
 
 
-# @bot.message_handler(commands=["mining_reward"], func=check_only_private)
-# def mining_reward(e):
-#     try:
-#         params = " ".join(e.text.split(" ")[1:])
-#         match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
-#
-#         if match is None:
-#             return
-#
-#         suffix = match["suffix"]
-#         own_hashrate = match["dec"]
-#
-#         stats = KaspaInterface.get_stats()
-#         network_hashrate = kaspa_api.get_hashrate()
-#         own_hashrate = own_hashrate + suffix if suffix else own_hashrate
-#         own_hashrate = hashrate_to_int(own_hashrate)
-#
-#         if own_hashrate:
-#             hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
-#             rewards = get_mining_rewards(int(stats['daa_score']), hash_percent_of_network)
-#             bot.send_message(e.chat.id,
-#                              MINING_CALC(rewards),
-#                              parse_mode="Markdown")
-#     except Exception:
-#         print(f'Raised exception: {e}')
+@bot.message_handler(commands=["mining_reward"], func=check_only_private)
+def mining_reward(e):
+    try:
+        params = " ".join(e.text.split(" ")[1:])
+        match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
+
+        if match is None:
+            return
+
+        suffix = match["suffix"]
+        own_hashrate = match["dec"]
+
+        network_hashrate = kaspa_api.get_hashrate()["hashrate"] * 1_000_000_000_000
+        own_hashrate = own_hashrate + suffix if suffix else own_hashrate
+        own_hashrate = hashrate_to_int(own_hashrate)
+
+        stats = kaspa_api.get_blockdag_info()
+
+        if own_hashrate:
+            hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
+            rewards = get_mining_rewards(int(stats['virtualDaaScore']), hash_percent_of_network)
+            bot.send_message(e.chat.id,
+                             MINING_CALC(rewards),
+                             parse_mode="Markdown")
+    except Exception:
+        print(f'Raised exception: {e}')
 
 
 @bot.message_handler(commands=["id"])
@@ -335,7 +336,7 @@ def mcap(e):
         price_usd = kaspa_info["market_data"]["current_price"]["usd"]
         rank = kaspa_info["market_data"]["market_cap_rank"]
 
-        circ_supply = kaspa_api.get_coin_supply()["circulatingSupply"]
+        circ_supply = float(kaspa_api.get_coin_supply()["circulatingSupply"]) / 100000000
 
         bot.send_message(e.chat.id,
                          f"*$KAS MARKET CAP*\n"
@@ -523,8 +524,8 @@ def listingpool(e):
 
 # send the request to the server and retrive the response
 # with KaspaInterface.kaspa_connection() as client:
-    # subscribe utxo change for donation address
-    # resp = client.subscribe(command=command, payload=payload, callback=callback_func)
+# subscribe utxo change for donation address
+# resp = client.subscribe(command=command, payload=payload, callback=callback_func)
 
 if __name__ == '__main__':
     bot.polling(none_stop=True)

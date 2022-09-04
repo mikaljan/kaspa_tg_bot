@@ -31,3 +31,7 @@ def get_balance(addr):
 
 def get_coin_supply():
     return __get(f"info/coinsupply")
+
+
+def get_blockdag_info():
+    return __get(f"info/blockdag")
