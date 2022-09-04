@@ -119,7 +119,7 @@ def donate(e):
                      parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["balance"], func=check_only_private)
+@bot.message_handler(commands=["balance"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def balance(e):
     try:
         try:
@@ -142,7 +142,7 @@ def balance(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["devfund"], func=check_only_private)
+@bot.message_handler(commands=["devfund"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def devfund(e):
     try:
         try:
@@ -163,7 +163,7 @@ def devfund(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 10))
 def coin_supply(e):
     try:
         coin_supply = kaspa_api.get_coin_supply()
@@ -289,7 +289,7 @@ def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward"], func=check_only_private)
+@bot.message_handler(commands=["mining_reward"], func=check_debounce(60*10))
 def mining_reward(e):
     try:
         params = " ".join(e.text.split(" ")[1:])
@@ -367,7 +367,7 @@ def hashrate(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["buy"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["buy"], func=check_debounce(60 * 10))
 def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
@@ -390,7 +390,7 @@ def buy(e):
                      parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["languages"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
 def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
@@ -495,7 +495,7 @@ h = {
     "x-sender-address": "Address undefined"}
 
 
-@bot.message_handler(commands=["listingpool"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["listingpool"], func=check_debounce(60 * 10))
 def listingpool(e):
     print(requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/contributions",
                        headers=h, allow_redirects=True))
