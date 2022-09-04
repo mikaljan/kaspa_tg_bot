@@ -91,11 +91,14 @@ def callback_query_price_update(call):
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
 def callback_query_hashrate_update(call):
     try:
-        stats = KaspaInterface.get_stats()
-        norm_hashrate = normalize_hashrate(int(stats['hashrate']))
+        try:
+            hashrate = kaspa_api.get_hashrate()["hashrate"]
+        except Exception as e:
+            print(str(e))
+            return
 
         try:
-            bot.edit_message_text(f"Current Hashrate: *{norm_hashrate}*", call.message.chat.id, call.message.id,
+            bot.edit_message_text(f"Current Hashrate: *{hashrate:0.2f} TH/s*", call.message.chat.id, call.message.id,
                                   parse_mode="Markdown",
                                   reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                            callback_data="cb_update_hashrate")]]))
@@ -129,7 +132,7 @@ def balance(e):
             bot.send_message(e.chat.id, "kaspa wallet not valid.")
             return
 
-        balance = KaspaInterface.get_balance(address)
+        balance = kaspa_api.get_balance(address)["balance"]
 
         bot.send_message(e.chat.id, f"```\nBalance for\n"
                                     f"  {address}\n"
@@ -143,8 +146,8 @@ def balance(e):
 def devfund(e):
     try:
         try:
-            balance_mining = KaspaInterface.get_balance(DEV_MINING_ADDR)
-            balance_donation = KaspaInterface.get_balance(DEV_DONATION_ADDR)
+            balance_mining = kaspa_api.get_balance(DEV_MINING_ADDR)["balance"]
+            balance_donation = kaspa_api.get_balance(DEV_DONATION_ADDR)["balance"]
         except TimeoutError as e:
             print(f'Exception raised: {e}')
             return
@@ -286,31 +289,31 @@ def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward"], func=check_only_private)
-def mining_reward(e):
-    try:
-        params = " ".join(e.text.split(" ")[1:])
-        match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
-
-        if match is None:
-            return
-
-        suffix = match["suffix"]
-        own_hashrate = match["dec"]
-
-        stats = KaspaInterface.get_stats()
-        network_hashrate = int(stats['hashrate'])
-        own_hashrate = own_hashrate + suffix if suffix else own_hashrate
-        own_hashrate = hashrate_to_int(own_hashrate)
-
-        if own_hashrate:
-            hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
-            rewards = get_mining_rewards(int(stats['daa_score']), hash_percent_of_network)
-            bot.send_message(e.chat.id,
-                             MINING_CALC(rewards),
-                             parse_mode="Markdown")
-    except Exception:
-        print(f'Raised exception: {e}')
+# @bot.message_handler(commands=["mining_reward"], func=check_only_private)
+# def mining_reward(e):
+#     try:
+#         params = " ".join(e.text.split(" ")[1:])
+#         match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
+#
+#         if match is None:
+#             return
+#
+#         suffix = match["suffix"]
+#         own_hashrate = match["dec"]
+#
+#         stats = KaspaInterface.get_stats()
+#         network_hashrate = kaspa_api.get_hashrate()
+#         own_hashrate = own_hashrate + suffix if suffix else own_hashrate
+#         own_hashrate = hashrate_to_int(own_hashrate)
+#
+#         if own_hashrate:
+#             hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
+#             rewards = get_mining_rewards(int(stats['daa_score']), hash_percent_of_network)
+#             bot.send_message(e.chat.id,
+#                              MINING_CALC(rewards),
+#                              parse_mode="Markdown")
+#     except Exception:
+#         print(f'Raised exception: {e}')
 
 
 @bot.message_handler(commands=["id"])
@@ -332,7 +335,7 @@ def mcap(e):
         price_usd = kaspa_info["market_data"]["current_price"]["usd"]
         rank = kaspa_info["market_data"]["market_cap_rank"]
 
-        circ_supply = KaspaInterface.get_circulating_supply()
+        circ_supply = kaspa_api.get_coin_supply()["circulatingSupply"]
 
         bot.send_message(e.chat.id,
                          f"*$KAS MARKET CAP*\n"
@@ -355,9 +358,7 @@ def id(e):
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
     try:
-        resp = requests.get("https://kaspa.herokuapp.com/info/hashrate")
-        data = resp.json()
-        hashrate = data["hashrate"]
+        hashrate = kaspa_api.get_hashrate()["hashrate"]
         bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
                          reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                   callback_data="cb_update_hashrate")]]))
@@ -425,6 +426,7 @@ def get_price_message():
     price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency']['usd']
 
     rank = coin_info["market_data"]["market_cap_rank"]
+    volume = coin_info["market_data"]["total_volume"]["usd"]
 
     message = f"📈 Price Update for 📈\n" \
               f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
@@ -432,7 +434,8 @@ def get_price_message():
               f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.6f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
               f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
-              f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n```" \
+              f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n" \
+              f"Volume : {volume:,.0f} USD\n```" \
         # f"MCAP  : {coin_info['market_data']['market_cap'].get('usd', 0):,} USD\n" \
     # f"FDV   : {coin_info['market_data']['fully_diluted_valuation'].get('usd', 0):,} USD\n" \
     # f"Circ. Supply:\n  {coin_info['market_data']['circulating_supply'] or 0:,}\n" \
@@ -505,8 +508,8 @@ def listingpool(e):
     dark_fields = round(percent / 10)
     light_fields = 10 - dark_fields
 
-    dark_fields = '🟩'*dark_fields
-    light_fields = '⬜️'*light_fields
+    dark_fields = '🟩' * dark_fields
+    light_fields = '⬜️' * light_fields
 
     bot.send_message(e.chat.id,
                      f'*{d["data"]["title"]}*\n\n'
@@ -519,7 +522,7 @@ def listingpool(e):
 
 
 # send the request to the server and retrive the response
-with KaspaInterface.kaspa_connection() as client:
+# with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
-    resp = client.subscribe(command=command, payload=payload, callback=callback_func)
-    bot.polling(none_stop=True)
+    # resp = client.subscribe(command=command, payload=payload, callback=callback_func)
+    # bot.polling(none_stop=True)

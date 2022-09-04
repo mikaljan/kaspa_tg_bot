@@ -19,3 +19,15 @@ def __get(endpoint, params=None):
 
 def get_coin_supply():
     return __get("info/coinsupply")
+
+
+def get_hashrate():
+    return __get("info/hashrate")
+
+
+def get_balance(addr):
+    return __get(f"info/addresses/{addr}/balance")
+
+
+def get_coin_supply():
+    return __get(f"info/coinsupply")
