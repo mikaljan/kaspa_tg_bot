@@ -7,7 +7,7 @@ import requests
 
 _session = requests.session()
 
-BASE_URL = "http://api.kaspa.org/"
+BASE_URL = "https://api.kaspa.org/"
 
 
 def __get(endpoint, params=None):
@@ -26,7 +26,7 @@ def get_hashrate():
 
 
 def get_balance(addr):
-    return __get(f"info/addresses/{addr}/balance")
+    return __get(f"addresses/{addr}/balance")
 
 
 def get_coin_supply():

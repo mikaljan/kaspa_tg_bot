@@ -10,7 +10,7 @@ from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-import KaspaInterface
+# import KaspaInterface
 import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC, normalize_hashrate
@@ -525,4 +525,6 @@ def listingpool(e):
 # with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
     # resp = client.subscribe(command=command, payload=payload, callback=callback_func)
-    # bot.polling(none_stop=True)
+
+if __name__ == '__main__':
+    bot.polling(none_stop=True)
