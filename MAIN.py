@@ -116,8 +116,8 @@ def callback_query_hashrate_update(call):
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def donate(e):
     bot.send_message(e.chat.id,
-                     f"Please consider a donation for my work:\n* Kaspa Bot\n* Block explorer\n* REST-API\n"
-                     f" `{os.environ['DONATION_ADDRESS']}`\n\nThank you!",
+                     f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API*"
+                     f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
                      parse_mode="Markdown")
 
 
