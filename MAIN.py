@@ -13,7 +13,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # import KaspaInterface
 import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
-from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC, normalize_hashrate
+from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
 
 DEBOUNCE_CACHE = {}
 
@@ -115,7 +115,9 @@ def callback_query_hashrate_update(call):
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def donate(e):
-    bot.send_message(e.chat.id, f"Please consider a donation for KASPA-Bot: `{os.environ['DONATION_ADDRESS']}`",
+    bot.send_message(e.chat.id,
+                     f"Please consider a donation for my work:\n* Kaspa Bot\n* Block explorer\n* REST-API\n"
+                     f" `{os.environ['DONATION_ADDRESS']}`\n\nThank you!",
                      parse_mode="Markdown")
 
 
@@ -289,7 +291,7 @@ def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward"], func=check_debounce(60*10))
+@bot.message_handler(commands=["mining_reward"], func=check_debounce(60 * 10))
 def mining_reward(e):
     try:
         params = " ".join(e.text.split(" ")[1:])
@@ -412,6 +414,34 @@ def buy(e):
                      parse_mode="Markdown")
 
 
+@bot.message_handler(commands=["miningpools"], func=check_debounce(60 * 10))
+def miningpools(e):
+    bot.send_message(e.chat.id,
+                     f"----------------------\n"
+                     f" *Kaspa mining pools*\n"
+                     f"----------------------\n"
+                     f"[ACC-POOL](https://kaspa.acc-pool.pw/)\n"
+                     f"[KASPA-POOL](https://kaspa-pool.org/)\n"
+                     f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
+                     f"[HASHPOOL](https://hashpool.com/coins/KAS)",
+                     parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["links"], func=check_debounce(60 * 10))
+def links(e):
+    bot.send_message(e.chat.id,
+                     f"----------------------\n"
+                     f" *Most important links*\n"
+                     f"----------------------\n"
+                     f"[Website](https://kaspa.org/)\n"
+                     f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
+                     f"[Block Explorer (BETA)](https://explorer.kaspa.org/)\n"
+                     f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
+                     f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
+                     f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
+                     parse_mode="Markdown")
+
+
 def get_price_message():
     coin = "kaspa"
     coin_info = get_coin_info()
@@ -495,34 +525,6 @@ h = {
     "Sec-Fetch-Site": "same-site",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
     "x-sender-address": "Address undefined"}
-
-
-@bot.message_handler(commands=["listingpool"], func=check_debounce(60 * 10))
-def listingpool(e):
-    print(requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/contributions",
-                       headers=h, allow_redirects=True))
-    d = requests.get(r"https://api.poolo.io/app/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9/sync",
-                     headers=h, allow_redirects=True).json()
-
-    percent = d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100
-
-    print(percent)
-
-    dark_fields = round(percent / 10)
-    light_fields = 10 - dark_fields
-
-    dark_fields = '🟩' * dark_fields
-    light_fields = '⬜️' * light_fields
-
-    bot.send_message(e.chat.id,
-                     f'*{d["data"]["title"]}*\n\n'
-                     f'Link: [Link to Pool](https://app.poolo.io/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9)\n\n'
-                     f'End date: {d["data"]["endDate"][:19]}\n\n'
-                     f'Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n\n'
-                     f'Filled: *{percent:.02f} %*\n'
-                     f'{dark_fields}{light_fields}',
-                     parse_mode="Markdown")
-
 
 # send the request to the server and retrive the response
 # with KaspaInterface.kaspa_connection() as client:
