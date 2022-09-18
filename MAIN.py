@@ -397,7 +397,7 @@ def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
                      f" *Kaspa in your language*\n"
-                     f" *Inoffical groups*\n"
+                     f" *Inofficial groups*\n"
                      f"----------------------------------\n"
                      f"🇨🇳 [https://t.me/kaspa_chinese/]\n"
                      f"🇩🇪 [https://t.me/KaspaGerman/]\n"
