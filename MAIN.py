@@ -440,6 +440,7 @@ def links(e):
                      f"[Block Explorer (BETA)](https://explorer.kaspa.org/)\n"
                      f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
                      f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
+                     f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
                      f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
                      parse_mode="Markdown")
 
