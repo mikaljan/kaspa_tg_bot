@@ -313,7 +313,7 @@ def mining_reward(e):
             hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
             rewards = get_mining_rewards(int(stats['virtualDaaScore']), hash_percent_of_network)
             bot.send_message(e.chat.id,
-                             MINING_CALC(rewards),
+                             f"*Mining rewards for {match['dec']} {suffix[:2].upper()}/s*\n\n" + MINING_CALC(rewards),
                              parse_mode="Markdown")
     except Exception:
         print(f'Raised exception: {e}')
