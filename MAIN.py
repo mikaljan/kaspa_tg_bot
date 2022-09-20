@@ -291,11 +291,11 @@ def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["mining_reward", "mr"], func=check_debounce(60 * 10))
 def mining_reward(e):
     try:
         params = " ".join(e.text.split(" ")[1:])
-        match = re.match(r"(?P<dec>\d+) *(?P<suffix>[^\d ]+)", params)
+        match = re.match(r"(?P<dec>[\d\.]+) *(?P<suffix>[^\d ]+)", params)
 
         if match is None:
             return
