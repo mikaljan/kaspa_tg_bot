@@ -94,9 +94,6 @@ def normalize_hashrate(hashrate: int):
 
 
 MINING_CALC = lambda rewards: f'''
-  KAS / sec   :  {rewards['secound']:,}
-  KAS / min   :  {round(rewards['minute']):,}
-  KAS / hour  :  {round(rewards['hour']):,}
   KAS / day   :  {round(rewards['day']):,}
   KAS / week  :  {round(rewards['week']):,}
   KAS / month :  {round(rewards['month']):,}
