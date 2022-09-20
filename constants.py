@@ -3,7 +3,7 @@ DEBOUNCE_SECS_PRICE = 60 * 60
 DEV_MINING_ADDR = 'kaspa:pzhh76qc82wzduvsrd9xh4zde9qhp0xc8rl7qu2mvl2e42uvdqt75zrcgpm00'
 DEV_DONATION_ADDR = 'kaspa:precqv0krj3r6uyyfa36ga7s0u9jct0v4wg8ctsfde2gkrsgwgw8jgxfzfc98'
 
-TOTAL_COIN_SUPPLY = 28_376_234_058
+TOTAL_COIN_SUPPLY = 28_700_000_000
 DEF_PHASE_INCREMENT = 2_629_800
 DEFLATIONARY_TABLE ={
     0: {"daa_range": range(0, 15519600), "reward_per_daa": 500.0},

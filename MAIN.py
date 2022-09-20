@@ -174,7 +174,7 @@ def coin_supply(e):
             return
 
         circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
-        total_supply = float(coin_supply["maxSupply"]) / 100000000
+        total_supply = float(TOTAL_COIN_SUPPLY)
 
         bot.send_message(e.chat.id,
                          f"```"
