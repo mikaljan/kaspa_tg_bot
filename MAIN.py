@@ -134,7 +134,7 @@ def balance(e):
             bot.send_message(e.chat.id, "kaspa wallet not valid.")
             return
 
-        balance = kaspa_api.get_balance(address)["balance"]
+        balance = kaspa_api.get_balance(address)["balance"] / 100000000
 
         bot.send_message(e.chat.id, f"```\nBalance for\n"
                                     f"  {address}\n"
@@ -148,19 +148,20 @@ def balance(e):
 def devfund(e):
     try:
         try:
-            balance_mining = kaspa_api.get_balance(DEV_MINING_ADDR)["balance"]
-            balance_donation = kaspa_api.get_balance(DEV_DONATION_ADDR)["balance"]
+            balance_mining = kaspa_api.get_balance(DEV_MINING_ADDR)["balance"] / 100000000
+            balance_donation = kaspa_api.get_balance(DEV_DONATION_ADDR)["balance"] / 100000000
         except TimeoutError as e:
             print(f'Exception raised: {e}')
             return
 
         bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
                                     f"```\nMINING\n"
-                                    f"    {balance_mining:,} KAS\n"
+                                    f"    {round(balance_mining, 2):,} KAS\n"
                                     f"DONATION\n"
-                                    f"    {balance_donation:,} KAS\n"
+                                    f"    {round(balance_donation, 2):,} KAS\n"
                                     f"{30 * '-'}\n"
-                                    f"{balance_mining + balance_donation:,} KAS\n```", parse_mode="Markdown")
+                                    f"{round(balance_mining, 2) + round(balance_donation, 2):,} KAS\n```",
+                         parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
