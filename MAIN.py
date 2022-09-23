@@ -64,6 +64,20 @@ def check_only_private(*args):
     else:
         return True
 
+def ignore_channels(ignore_ids):
+    def wrapper(*args, **kwargs):
+        if str(args[0].chat.id) in ignore_ids:
+            try:
+                bot.delete_message(args[0].chat.id, args[0].id)
+                return False
+            except ApiTelegramException as e:
+                if "message can't be deleted for everyone" not in str(e):
+                    print(e)
+
+        return True  # True, if timedelta > seconds
+
+    return wrapper
+
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
 def callback_query_price_update(call):
@@ -292,7 +306,7 @@ def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward", "mr"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["mining_reward", "mr"], func=ignore_channels(["-1001589070884"]))
 def mining_reward(e):
     try:
         params = " ".join(e.text.split(" ")[1:])
