@@ -64,6 +64,7 @@ def check_only_private(*args):
     else:
         return True
 
+
 def ignore_channels(ignore_ids):
     def wrapper(*args, **kwargs):
         if str(args[0].chat.id) in ignore_ids:
@@ -389,6 +390,9 @@ def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
                      f"    💰   *Exchanges*\n"
+                     f"----------------------------------\n"
+                     f" *MEXC Global*\n"
+                     f"  [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                      f"----------------------------------\n"
                      f" *Txbit*\n"
                      f"  [https://txbit.io/]\n"
