@@ -404,7 +404,9 @@ def buy(e):
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
                      f" *Kaspa in your language*\n"
-                     f" *Inofficial groups*\n"
+                     f" ⚠️Please keep in mind:\n"
+                     f"These are *unofficial* groups.\n"
+                     f"Use with caution! ⚠️ \n"
                      f"----------------------------------\n"
                      f"🇨🇳 [https://t.me/kaspa_chinese]\n"
                      f"🇩🇪 [https://t.me/KaspaGerman]\n"
