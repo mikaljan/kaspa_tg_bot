@@ -388,26 +388,14 @@ def hashrate(e):
 @bot.message_handler(commands=["buy"], func=check_debounce(60 * 10))
 def buy(e):
     bot.send_message(e.chat.id,
-                     f"----------------------------------\n"
                      f"    💰   *Exchanges*\n"
                      f"----------------------------------\n"
-                     f" *MEXC Global*\n"
-                     f"  [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
-                     f"----------------------------------\n"
-                     f" *Txbit*\n"
-                     f"  [https://txbit.io/]\n"
-                     f"----------------------------------\n"
-                     f"  *Exibitron*\n"
-                     f"  [https://www.exbitron.com/]\n"
-                     f"----------------------------------\n"
-                     f"  *TradeOgre*\n"
-                     f"  [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)\n"
-                     f"----------------------------------\n"
-                     f"  *cryptex24*\n"
-                     f"  [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)\n"
-                     f"----------------------------------\n"
-                     f"  *vitex (DEX)*\n"
-                     f"  [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)",
+                     f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
+                     f" *Txbit* [https://txbit.io/]\n"
+                     f" *Exibitron* [https://www.exbitron.com/]\n"
+                     f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)\n"
+                     f" *cryptex24* [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)\n"
+                     f" *vitex (DEX)* [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)",
                      parse_mode="Markdown")
 
 
