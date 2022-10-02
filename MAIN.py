@@ -195,10 +195,10 @@ def coin_supply(e):
         bot.send_message(e.chat.id,
                          f"```"
                          f"\n"
-                         f"Circulating supply  : {circulating_supply:,.0f} KAS\n"
+                         f"Total supply  : {circulating_supply:,.0f} KAS\n"
                          f"Uncirculated supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
                          f"{'=' * 40}\n"
-                         f"Total supply        : {total_supply:,.0f} KAS\n"
+                         f"Max supply ~      : {total_supply:,.0f} KAS\n"
                          f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
                          f"```", parse_mode="Markdown")
     except Exception as e:
