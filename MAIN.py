@@ -196,7 +196,7 @@ def coin_supply(e):
                          f"```"
                          f"\n"
                          f"Total supply  : {circulating_supply:,.0f} KAS\n"
-                         f"Uncirculated supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
+                         f"Unmined supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
                          f"{'=' * 15}\n"
                          f"Max supply ~      : {total_supply:,.0f} KAS\n"
                          f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
