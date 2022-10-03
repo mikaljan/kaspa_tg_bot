@@ -342,8 +342,8 @@ def id(e):
 
 @bot.message_handler(commands=["chart"])
 def chart(e):
-    bot.send_message(e.chat.id, f"See *KAS/USDT* chart on exbitron:\n"
-                                f"    https://www.mexc.com/exchange/KAS_USDT",
+    bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
+                                f"    https://www.mexc.com/exchange/KAS\_USDT\n",
                      parse_mode="Markdown")
 
 
