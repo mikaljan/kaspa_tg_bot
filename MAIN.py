@@ -467,9 +467,9 @@ def get_price_message():
     except (ValueError, IndexError):
         symbol = coin.upper()
 
-    price_change_1h = coin_info['market_data']['price_change_percentage_1h_in_currency']['usd']
-    price_change_24h = coin_info['market_data']['price_change_percentage_24h_in_currency']['usd']
-    price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency']['usd']
+    price_change_1h = coin_info['market_data']['price_change_percentage_1h_in_currency'].get('usd', 0)
+    price_change_24h = coin_info['market_data']['price_change_percentage_24h_in_currency'].get('usd', 0)
+    price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency'].get('usd', 0)
 
     rank = coin_info["market_data"]["market_cap_rank"]
     volume = coin_info["market_data"]["total_volume"]["usd"]
