@@ -393,8 +393,7 @@ def buy(e):
                      f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                      f" *Txbit* [https://txbit.io/]\n"
                      f" *Exibitron* [https://www.exbitron.com/]\n"
-                     f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)\n"
-                     f" *cryptex24* [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)",
+                     f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                      parse_mode="Markdown")
 
 
