@@ -394,8 +394,7 @@ def buy(e):
                      f" *Txbit* [https://txbit.io/]\n"
                      f" *Exibitron* [https://www.exbitron.com/]\n"
                      f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)\n"
-                     f" *cryptex24* [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)\n"
-                     f" *vitex (DEX)* [https://x.vite.net/](https://x.vite.net/trade?symbol=KAS-000_USDT-000)",
+                     f" *cryptex24* [https://www.cryptex24.io](https://www.cryptex24.io/trade/KAS&USDT)",
                      parse_mode="Markdown")
 
 
