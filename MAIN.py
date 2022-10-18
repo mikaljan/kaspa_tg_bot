@@ -14,6 +14,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
+from plot import get_image_stream
 
 DEBOUNCE_CACHE = {}
 
@@ -90,7 +91,7 @@ def callback_query_price_update(call):
             print(f'Raised exception: {e}')
 
         try:
-            bot.edit_message_text(message, call.message.chat.id, call.message.id,
+            bot.edit_message_caption(message, call.message.chat.id, call.message.id,
                                   parse_mode="markdown",
                                   reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                            callback_data="cb_update")]]))
@@ -214,11 +215,12 @@ def price(e):
         else:
             try:
                 msg = get_price_message()
-
-                bot.send_message(e.chat.id, msg,
-                                 parse_mode="Markdown",
-                                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                          callback_data="cb_update")]]))
+                bot.send_photo(e.chat.id,
+                               get_image_stream(),
+                               caption=msg,
+                               parse_mode="Markdown",
+                               reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                        callback_data="cb_update")]]))
             except Exception:
                 print(f'Raised exception: {e}')
     except Exception as e:

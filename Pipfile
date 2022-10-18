@@ -7,6 +7,9 @@ name = "pypi"
 kaspy = "*"
 pytelegrambotapi = "*"
 requests = "*"
+plotly = "*"
+plotly-express = "*"
+kaleido = "*"
 
 [dev-packages]
 
