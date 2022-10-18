@@ -87,8 +87,9 @@ def callback_query_price_update(call):
         try:
             message = get_price_message()
 
-        except Exception:
+        except Exception as e:
             print(f'Raised exception: {e}')
+            return
 
         try:
             bot.edit_message_caption(message, call.message.chat.id, call.message.id,
