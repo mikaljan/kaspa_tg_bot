@@ -2,15 +2,17 @@
 
 import os
 import re
+import threading
 import time
 from contextlib import suppress
 from datetime import datetime
 
+import requests
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# import KaspaInterface
+import KaspaInterface
 import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
@@ -93,9 +95,9 @@ def callback_query_price_update(call):
 
         try:
             bot.edit_message_caption(message, call.message.chat.id, call.message.id,
-                                  parse_mode="markdown",
-                                  reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                           callback_data="cb_update")]]))
+                                     parse_mode="markdown",
+                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                              callback_data="cb_update")]]))
         except ApiTelegramException as e:
             if "message is not modified" not in str(e):
                 raise
@@ -502,48 +504,43 @@ def _get_kas_price():
         print(str(e))
 
 
-# notifiy in channel on donation
-command = 'notifyUtxosChangedRequest'
-payload = {"addresses": [os.environ["DONATION_ADDRESS"]]}
-
-
 def callback_func(notification: dict):  # create a callback function to process the notifications
+    print("here")
     with suppress(Exception):
         donation_amount = int(notification["utxosChangedNotification"]["added"][0]["utxoEntry"]["amount"]) / 100000000
         if chat_id := os.environ.get("DONATION_ANNOUNCEMENT"):
-            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS. ♥♥♥",
+            bot.send_message(chat_id,
+                             f"*Donation received*\nDid you see the super fast speed?\n\nThank you for {donation_amount} KAS donated to \n"
+                             f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
                              parse_mode="Markdown")
 
         if chat_id := os.environ.get("DONATION_ANNOUNCEMENT_2"):
-            bot.send_message(chat_id, f"Donation received. Thank you for {donation_amount} KAS. ♥♥♥",
+            bot.send_message(chat_id,
+                             f"*Donation received*\nDid you see the super fast speed?\n\nThank you for {donation_amount} KAS donated to \n"
+                             f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
                              parse_mode="Markdown")
 
 
-import requests
+def restart_subscription():
+    # notifiy in channel on donation
+    command = 'notifyUtxosChangedRequest'
+    payload = {"addresses": [os.environ["DONATION_ADDRESS"]]}
 
-h = {
-    "Accept": "application/json",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Connection": "keep-alive",
-    "Domain": "app",
-    "Host": "api.poolo.io",
-    "If-None-Match": 'W/"15a8-/QyElDsLF5Q4wnAxTAVyE5NRj9o"',
-    "Origin": "https://app.poolo.io",
-    "Referer": "https://app.poolo.io/",
-    "sec-ch-ua": '"Chromium";v="104", " Not A;Brand";v="99", "Google Chrome";v="104"',
-    "sec-ch-ua-mobile": '?0',
-    "sec-ch-ua-platform": '"Windows"',
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-site",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
-    "x-sender-address": "Address undefined"}
+    resp = client.subscribe(command=command, payload=payload, callback=callback_func)
 
-# send the request to the server and retrive the response
-# with KaspaInterface.kaspa_connection() as client:
-# subscribe utxo change for donation address
-# resp = client.subscribe(command=command, payload=payload, callback=callback_func)
+    while True:
+        if client._subscriptions[command].status != "connected":
+            resp = client.subscribe(command=command, payload=payload, callback=callback_func)
+        else:
+            time.sleep(60)
+
 
 if __name__ == '__main__':
-    bot.polling(none_stop=True)
+    # send the request to the server and retrive the response
+    with KaspaInterface.kaspa_connection() as client:
+        # subscribe utxo change for donation address
+
+        t1 = threading.Thread(target=restart_subscription, daemon=True)
+        t1.start()
+
+        bot.polling(none_stop=True)
