@@ -411,6 +411,7 @@ def buy(e):
                      f"These are *unofficial* groups.\n"
                      f"Use with caution! ⚠️ \n"
                      f"----------------------------------\n"
+                     f"🇦🇪 [https://t.me/kaspa_arabic]\n"
                      f"🇨🇳 [https://t.me/kaspa_chinese]\n"
                      f"🇩🇪 [https://t.me/KaspaGerman]\n"
                      f"🇪🇸 [https://t.me/kaspaesp]\n"
