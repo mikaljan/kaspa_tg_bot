@@ -400,7 +400,8 @@ def buy(e):
                      f" *Txbit* [https://txbit.io/]\n"
                      f" *Exibitron* [https://www.exbitron.com/]\n"
                      f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
-                     parse_mode="Markdown")
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
@@ -429,7 +430,8 @@ def buy(e):
                      f"🇹🇷 [https://t.me/KaspaTurk]\n"
                      f"🇻🇳 [https://t.me/Kaspa_VN]\n"
                      f"🇷🇸 [https://t.me/kaspa_balkan]",
-                     parse_mode="Markdown")
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["miningpools"], func=check_debounce(60 * 10))
@@ -442,7 +444,8 @@ def miningpools(e):
                      f"[KASPA-POOL](https://kaspa-pool.org/)\n"
                      f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
                      f"[HASHPOOL](https://hashpool.com/coins/KAS)",
-                     parse_mode="Markdown")
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["links"], func=check_debounce(60 * 10))
