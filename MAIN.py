@@ -307,7 +307,8 @@ def wallet(e):
                                     '  https://kdx.app/\n'
                                     '*Web wallet*:\n'
                                     '  https://wallet.kaspanet.io/',
-                         parse_mode="Markdown")
+                         parse_mode="Markdown",
+                         disable_web_page_preview=True)
     except Exception as e:
         print(str(e))
 
@@ -349,7 +350,8 @@ def id(e):
 def chart(e):
     bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
                                 f"    https://www.tradingview.com/chart/?symbol=MEXC%3AKASUSDT\n",
-                     parse_mode="Markdown")
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
@@ -462,7 +464,8 @@ def links(e):
                      f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
                      f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
                      f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
-                     parse_mode="Markdown")
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
 
 
 def get_price_message():
