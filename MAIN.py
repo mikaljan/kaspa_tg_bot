@@ -376,6 +376,21 @@ def mcap(e):
         print(f'Raised exception: {e}')
 
 
+@bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
+def max_hashrate(e):
+    try:
+        max_hashrate = kaspa_api.get_max_hashrate()
+
+        bot.send_message(e.chat.id,
+                         f"Max Kaspa Hashrate\n"
+                         f"  *{max_hashrate['hashrate']:.2f} THs*\n\n"
+                         f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
+                         f"  Block {max_hashrate['blockheader']['hash'][:8]}",
+                         parse_mode="Markdown")
+    except Exception as e:
+        print(f'Raised exception: {e}')
+
+
 @bot.message_handler(commands=["id"], func=check_only_private)
 def id(e):
     bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")

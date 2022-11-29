@@ -28,6 +28,9 @@ def get_hashrate():
 def get_balance(addr):
     return __get(f"addresses/{addr}/balance")
 
+def get_max_hashrate():
+    return __get(f"info/hashrate/max")
+
 
 def get_coin_supply():
     return __get(f"info/coinsupply")
