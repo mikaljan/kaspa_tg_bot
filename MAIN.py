@@ -444,6 +444,7 @@ def buy(e):
                      f"🇵🇱 [https://t.me/Kaspa_Poland]\n"
                      f"🇵🇹 [https://t.me/kaspa_portugues]\n"
                      f"🇳🇱 [https://t.me/Kaspa_Dutch]\n"
+                     f"🇷🇴 [https://t.me/KaspaRomania]\n"
                      f"🇷🇺 [https://t.me/kaspa_rus]\n"
                      f"🇹🇷 [https://t.me/KaspaTurk]\n"
                      f"🇻🇳 [https://t.me/Kaspa_VN]\n"
@@ -568,4 +569,9 @@ if __name__ == '__main__':
         t1 = threading.Thread(target=restart_subscription, daemon=True)
         t1.start()
 
-        bot.polling(none_stop=True)
+        while True:
+            try:
+                bot.polling(none_stop=True)
+            except Exception:
+                time.sleep(60)
+
