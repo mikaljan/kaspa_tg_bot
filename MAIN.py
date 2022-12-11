@@ -436,6 +436,7 @@ def buy(e):
                      f"🇪🇸 [https://t.me/kaspaesp]\n"
                      f"🇫🇷 [https://t.me/kasfrench]\n"
                      f"🇮🇳 [https://t.me/kaspaindia]\n"
+                     f"🇮🇩 [https://t.me/Kaspa_Indonesian]\n"
                      f"🇮🇱 [https://t.me/kaspaisrael]\n"
                      f"🇮🇹 [https://t.me/kaspaitalia]\n"
                      f"🇯🇵 [https://t.me/Kaspa_Japan]\n"
