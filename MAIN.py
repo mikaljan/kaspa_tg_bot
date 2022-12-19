@@ -592,7 +592,7 @@ def check_dk_pool():
                                          f" *{donation_balance - donation_announced:,.0f} KAS* for DAG Knight\n\n♥♥♥",
                                          parse_mode="Markdown")
 
-                donation_announced = donation_balance
+            donation_announced = donation_balance
         time.sleep(60)
 
 
