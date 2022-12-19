@@ -1,10 +1,10 @@
 # encoding: utf-8
+import logging
 import math
 import os
 import re
 import threading
 import time
-import logging
 from contextlib import suppress
 from datetime import datetime
 
@@ -13,7 +13,6 @@ from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-import KaspaInterface
 import kaspa_api
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
@@ -22,6 +21,7 @@ from plot import get_image_stream
 DEBOUNCE_CACHE = {}
 
 bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
+
 assert os.environ.get('DONATION_ADDRESS') is not None
 
 
@@ -491,20 +491,21 @@ def links(e):
 
 def progress_bar(perc):
     green_boxes = math.floor(perc / 100 * 8)
-    return green_boxes * "🟩" + "⬜" * (8- green_boxes)
+    return green_boxes * "🟩" + "⬜" * (8 - green_boxes)
+
 
 @bot.message_handler(commands=["dagknight", "dk"], func=check_debounce(60 * 10))
 def dagknight(e):
     dk_addr = "kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey"
     dag_knight_balance = kaspa_api.get_balance(dk_addr)["balance"] / 100000000
     bot.send_message(e.chat.id,
-                     f"[DAGKNIGHT funding pool](https://explorer.kaspa.org/addresses/kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey)\n"
+                     f"[DAGKnight funding pool](https://explorer.kaspa.org/addresses/kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey)\n"
                      f"----------------------\n"
                      f"*FILLED:*\n"
                      f"  *{round(dag_knight_balance):,.0f} KAS*\n"
                      f"      of needed *70M KAS*\n\n"
-                     f"*{round(dag_knight_balance)/10000/70:.02f}% done.*\n"
-                     f"{progress_bar(round(dag_knight_balance)/10000/70)}",
+                     f"*{round(dag_knight_balance) / 10000 / 70:.02f}% done.*\n"
+                     f"{progress_bar(round(dag_knight_balance) / 10000 / 70)}",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
 
@@ -556,7 +557,6 @@ def _get_kas_price():
 
 
 def callback_func(notification: dict):  # create a callback function to process the notifications
-    print("here")
     with suppress(Exception):
         donation_amount = int(notification["utxosChangedNotification"]["added"][0]["utxoEntry"]["amount"]) / 100000000
         if chat_id := os.environ.get("DONATION_ANNOUNCEMENT"):
@@ -572,31 +572,61 @@ def callback_func(notification: dict):  # create a callback function to process 
                              parse_mode="Markdown")
 
 
-def restart_subscription():
-    # notifiy in channel on donation
-    command = 'notifyUtxosChangedRequest'
-    payload = {"addresses": [os.environ["DONATION_ADDRESS"]]}
+DONATION_CHANNELS = [-1001589070884,
+                     -1001205240510]
 
-    resp = client.subscribe(command=command, payload=payload, callback=callback_func)
 
+def check_dk_pool():
+    donation_announced = 0
     while True:
-        if client._subscriptions[command].status != "connected":
-            resp = client.subscribe(command=command, payload=payload, callback=callback_func)
-        else:
-            time.sleep(60)
+        donation_addr = "kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey"
+        donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+
+        if donation_balance != donation_announced:
+            if donation_announced:
+                if donation_balance - donation_announced > 1000:
+                    for c_id in DONATION_CHANNELS:
+                        bot.send_message(c_id,  # -1001589070884,
+                                         f"*DAGKnight funding pool*\n"
+                                         f"   We received a new donation for DAG Knight of\n\n"
+                                         f"*{donation_balance - donation_announced:,.0f} KAS*\n\n♥♥♥",
+                                         parse_mode="Markdown")
+
+                donation_announced = donation_balance
+        time.sleep(60)
+
+
+def check_donations():
+    donation_announced = 0
+    while True:
+        donation_addr = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
+        donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+
+        if donation_balance != donation_announced:
+            if donation_announced:
+                for c_id in DONATION_CHANNELS:
+                    bot.send_message(c_id,
+                                     f"*Donation received*\nDid you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
+                                     f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
+                                     parse_mode="Markdown")
+
+            donation_announced = donation_balance
+        time.sleep(60)
 
 
 if __name__ == '__main__':
     # send the request to the server and retrive the response
-    with KaspaInterface.kaspa_connection() as client:
-        # subscribe utxo change for donation address
+    # with KaspaInterface.kaspa_connection() as client:
+    # subscribe utxo change for donation address
 
-        t1 = threading.Thread(target=restart_subscription, daemon=True)
-        t1.start()
+    t1 = threading.Thread(target=check_dk_pool)
+    t1.start()
 
-        while True:
-            try:
-                bot.polling(none_stop=True)
-            except Exception:
-                time.sleep(60)
+    t2 = threading.Thread(target=check_donations)
+    t2.start()
 
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception:
+            time.sleep(60)
