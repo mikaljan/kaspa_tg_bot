@@ -1,9 +1,10 @@
 # encoding: utf-8
-
+import math
 import os
 import re
 import threading
 import time
+import logging
 from contextlib import suppress
 from datetime import datetime
 
@@ -225,9 +226,9 @@ def price(e):
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                         callback_data="cb_update")]]))
             except Exception:
-                print(f'Raised exception: {e}')
+                logging.exception(f'Raised exception: {e}')
     except Exception as e:
-        print(str(e))
+        logging.exception(str(e))
 
 
 def get_coin_info():
@@ -488,6 +489,26 @@ def links(e):
                      disable_web_page_preview=True)
 
 
+def progress_bar(perc):
+    green_boxes = math.floor(perc / 100 * 8)
+    return green_boxes * "🟩" + "⬜" * (8- green_boxes)
+
+@bot.message_handler(commands=["dagknight", "dk"], func=check_debounce(60 * 10))
+def dagknight(e):
+    dk_addr = "kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey"
+    dag_knight_balance = kaspa_api.get_balance(dk_addr)["balance"] / 100000000
+    bot.send_message(e.chat.id,
+                     f"[DAGKNIGHT funding pool](https://explorer.kaspa.org/addresses/kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey)\n"
+                     f"----------------------\n"
+                     f"*FILLED:*\n"
+                     f"  *{round(dag_knight_balance):,.0f} KAS*\n"
+                     f"      of needed *70M KAS*\n\n"
+                     f"*{round(dag_knight_balance)/10000/70:.02f}% done.*\n"
+                     f"{progress_bar(round(dag_knight_balance)/10000/70)}",
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
+
+
 def get_price_message():
     coin = "kaspa"
     coin_info = get_coin_info()
@@ -531,7 +552,7 @@ def _get_kas_price():
         if resp.status_code == 200:
             return resp.json()["kaspa"]["usd"]
     except Exception as e:
-        print(str(e))
+        logging.exception(str(e))
 
 
 def callback_func(notification: dict):  # create a callback function to process the notifications
