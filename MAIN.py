@@ -587,7 +587,7 @@ def check_dk_pool():
                 if donation_balance - donation_announced > 1000:
                     for c_id in DONATION_CHANNELS:
                         bot.send_message(c_id,  # -1001589070884,
-                                         f"*DAGKnight funding pool*\n"
+                                         f"*[DAGKnight funding pool](https://explorer.kaspa.org/addresses/kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey)*\n"
                                          f" We received a new donation of\n\n"
                                          f" *{donation_balance - donation_announced:,.0f} KAS* for DAG Knight\n\n♥♥♥",
                                          parse_mode="Markdown")
@@ -606,7 +606,11 @@ def check_donations():
             if donation_announced:
                 for c_id in DONATION_CHANNELS:
                     bot.send_message(c_id,
-                                     f"*Donation received*\nDid you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
+                                     f"*Donation received for*\n"
+                                     f"* Telegram bot\n"
+                                     f"* REST-API\n"
+                                     f"* Blockexplorer\n\n"
+                                     f"Did you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
                                      f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
                                      parse_mode="Markdown")
 
