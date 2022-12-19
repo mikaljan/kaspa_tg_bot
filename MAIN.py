@@ -588,8 +588,8 @@ def check_dk_pool():
                     for c_id in DONATION_CHANNELS:
                         bot.send_message(c_id,  # -1001589070884,
                                          f"*DAGKnight funding pool*\n"
-                                         f"   We received a new donation for DAG Knight of\n\n"
-                                         f"*{donation_balance - donation_announced:,.0f} KAS*\n\n♥♥♥",
+                                         f" We received a new donation of\n\n"
+                                         f" *{donation_balance - donation_announced:,.0f} KAS* for DAG Knight\n\n♥♥♥",
                                          parse_mode="Markdown")
 
                 donation_announced = donation_balance
