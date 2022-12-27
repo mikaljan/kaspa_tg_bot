@@ -580,7 +580,11 @@ def check_dk_pool():
     donation_announced = 0
     while True:
         donation_addr = "kaspa:ppk66xua7nmq8elv3eglfet0xxcfuks835xdgsm5jlymjhazyu6h5ac62l4ey"
-        donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+        try:
+            donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+        except Exception:
+            time.sleep(1)
+            continue
 
         if donation_balance != donation_announced:
             if donation_announced:
@@ -600,7 +604,11 @@ def check_donations():
     donation_announced = 0
     while True:
         donation_addr = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
-        donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+        try:
+            donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+        except Exception:
+            time.sleep(1)
+            continue
 
         if donation_balance != donation_announced:
             if donation_announced:
