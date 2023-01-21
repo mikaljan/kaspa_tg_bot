@@ -534,8 +534,12 @@ def send_kas(e):
         bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
 
 
-@bot.message_handler(commands=["create_wallet"], chat_types=['private'])
+@bot.message_handler(commands=["create_wallet"])
 def create_wallet(e):
+    if e.chat.type != "private":
+        bot.send_message(e.chat.id, "To create a new wallet, please use a direct message to me.")
+        return
+
     try:
         wallet = create_new_wallet(get_wallet_pw(e.from_user.username),
                                    username_to_uuid(e.from_user.username))
@@ -550,11 +554,6 @@ def create_wallet(e):
                          parse_mode="Markdown")
     except WalletCreationError:
         bot.send_message(e.chat.id, "Wallet already created. Use /my_wallet")
-
-
-@bot.message_handler(commands=["create_wallet"], chat_types=['supergroup'])
-def create_wallet(e):
-    bot.send_message(e.chat.id, "To create a new wallet, please use a direct message to me.")
 
 
 @bot.message_handler(commands=["my_wallet"], chat_types=['private'])
