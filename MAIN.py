@@ -548,7 +548,8 @@ To use your wallet or get information, use the following commands:
 "responsible for any issues or losses that may occur with the use of this wallet."
 "\nUse at your own risk."
 
-"\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>",
+"\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>"
+"\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
                      parse_mode="html")
 
 
@@ -649,9 +650,16 @@ def check_wallet(e):
                                                                   url=f"https://explorer.kaspa.org/addresses/{wallet['publicAddress']}")]])
 
         wallet_balance = kaspa_api.get_balance(wallet["publicAddress"])["balance"] / 100000000
+
+        wallet_balance = f"{wallet_balance:.8f}"
+
+        if "." in wallet_balance:
+            wallet_balance = wallet_balance.rstrip("0")
+            wallet_balance = wallet_balance.rstrip(".")
+
         bot.send_message(e.chat.id,
-                         f'@{username} telegram wallet is:\n`{wallet["publicAddress"]}`\nBalance:\n  *{wallet_balance} KAS*',
-                         parse_mode="Markdown",
+                         f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
+                         parse_mode="html",
                          reply_markup=show_button)
 
     except WalletNotFoundError:
@@ -673,17 +681,18 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_use
     msg_amount = f"{amount / 100000000:.8f}"
 
     if "." in msg_amount:
-        msg_amount = msg_amount.rstrip("0.")
+        msg_amount = msg_amount.rstrip("0")
+        msg_amount = msg_amount.rstrip(".")
 
     message = bot.send_message(chat_id,
-                               f"Sending *{msg_amount} KAS* to "
+                               f"Sending <b>{msg_amount} KAS</b> to "
                                f"{f'@{recipient_username}' if recipient_username else ''}"
-                               f"\n   [{to_address[:16]}...{to_address[-10:]}](https://explorer.kaspa.org/addresses/{to_address})\n\n"
+                               f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
                                f"TX-ID\n"
-                               f"   [{tx_id[:6]}...{tx_id[-6:]}](https://explorer.kaspa.org/txs/{tx_id}) ✅\n"
+                               f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
                                f"Block-ID\n"
-                               f"   `...`",
-                               parse_mode="Markdown",
+                               f"   <code>...</code>",
+                               parse_mode="html",
                                disable_web_page_preview=True)
 
     TX_CHECKER[tx_id] = (time.time(), message)
