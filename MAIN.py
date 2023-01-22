@@ -589,7 +589,7 @@ def send_kas(e):
         return
 
     try:
-        amount = float(re.search("(\d+([.,]\d+)?) ?KAS", e.text, re.IGNORECASE)[1].replace(",", "."))
+        amount = float(re.search("(\d+([.,]\d+)?) ?(KAS)?", e.text, re.IGNORECASE)[1].replace(",", "."))
     except Exception:
         bot.send_message(e.chat.id, "Can't parse the amount.")
         bot.send_message(e.chat.id, "Reply to someone's message and write:\n `/tip X.XX KAS`.",
