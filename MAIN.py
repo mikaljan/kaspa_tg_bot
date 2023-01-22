@@ -24,6 +24,8 @@ logging.basicConfig(format="%(asctime)s::%(name)s::%(module)s::%(levelname)s::%(
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+logging.info('Starting TGBOT')
+
 DEBOUNCE_CACHE = {}
 
 TX_CHECKER = {}
@@ -841,4 +843,5 @@ if __name__ == '__main__':
         try:
             bot.polling(none_stop=True)
         except Exception:
-            time.sleep(60)
+            logging.exception("Something happenend")
+            time.sleep(10)
