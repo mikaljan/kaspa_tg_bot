@@ -69,13 +69,16 @@ def create_new_wallet(password, uuid=None):
         return resp.json()
 
 
-def create_tx(uuid, password, to_address, amount):
+def create_tx(uuid, password, to_address, amount, inclusiveFee=False):
     assert password
 
     data = {
         "toAddr": to_address,
-        "amount": amount
+        "amount": amount,
+        "inclusiveFee": inclusiveFee
     }
+
+
 
     resp = requests.post(f'https://kaspagames.org/api/wallets/{uuid}/transactions',
                          json=data,

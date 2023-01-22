@@ -19,6 +19,11 @@ from plot import get_image_stream
 from tipping import create_new_wallet, WalletCreationError, get_wallet, WalletNotFoundError, username_to_uuid, \
     get_wallet_pw, create_tx, WalletInsufficientBalanceError
 
+logging.basicConfig(format="%(asctime)s::%(name)s::%(module)s::%(levelname)s::%(message)s",
+                    level=logging.DEBUG)
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 DEBOUNCE_CACHE = {}
 
 TX_CHECKER = {}
@@ -159,10 +164,10 @@ def balance(e):
 
         balance = kaspa_api.get_balance(address)["balance"] / 100000000
 
-        bot.send_message(e.chat.id, f"```\nBalance for\n"
+        bot.send_message(e.chat.id, f"\nBalance for\n"
                                     f"  {address}\n"
-                                    f"{60 * '-'}\n"
-                                    f"{balance:,} KAS```", parse_mode="Markdown")
+                                    f"{10 * '-'}\n"
+                                    f"{balance:,} KAS", parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
@@ -494,42 +499,106 @@ def links(e):
     # telegram bot features
 
 
-@bot.message_handler(commands=["tip"])
-def send_kas(e):
-    if e.chat.id != -1001446859854:
+@bot.message_handler(commands=["withdraw"])
+def withdraw(e):
+    try:
+        # sender = e.from_user.username
+        sender = f"{e.from_user.id}"
+        get_wallet(username_to_uuid(sender))
+    except Exception:
+        bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                    f"DM the bot with /create_wallet to create a new wallet.")
         return
 
+    if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61}", e.text)):
+        bot.send_message(e.chat.id, "No valid *kaspa:* address found.",
+                         parse_mode="Markdown")
+        return
+
+    if not (amount := re.search("(\d+([.,]\d+)?) ?KAS", e.text, re.IGNORECASE)):
+        bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
+        return
+    else:
+        amount = float(amount[1].replace(",", "."))
+
+    inclusive_fee_match = re.search("inclusivefee", e.text, re.IGNORECASE)
+
+    send_kas_and_log(sender,
+                     to_address[0],
+                     round(amount * 100000000),
+                     e.chat.id,
+                     inclusiveFee=inclusive_fee_match is not None)
+
+
+@bot.message_handler(commands=["telegram_wallet"])
+def tgwallet(e):
+    bot.send_message(e.chat.id,
+                     """<b>Welcome to Kaspa Telegram wallet!</b>
+I am the Kaspa Bot - here to help you to create a real wallet,
+which you can use with your telegram account!
+<b>To create a wallet DM me with the command /create_wallet.</b>
+
+You will get your 12-word-seeds and your public address, which is static forever.
+To use your wallet or get information, use the following commands:
+<b>  /wallet_info</b> - Shows either your or the replied user's wallet information.
+<b>  /tip 1.23 KAS</b> - reply to someone's message and send him/her a tip.
+<b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
+""" +
+"\nPlease be advised that neither the dev nor any of the kaspa community is"
+"responsible for any issues or losses that may occur with the use of this wallet."
+"\nUse at your own risk."
+
+"\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>",
+                     parse_mode="html")
+
+
+@bot.message_handler(commands=["tip"])
+def send_kas(e):
+    recipient_username = ""
     try:
-        sender = e.from_user.username
+        # sender = e.from_user.username
+        sender = f"{e.from_user.id}"
     except Exception:
-        print("You don't have a wallet. DM ME with /create_wallet to create one.")
+        bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                    f"DM the bot with /create_wallet to create a new wallet.")
         return
 
     try:
         # reply to a message?
-        recipient = e.reply_to_message.from_user.username
+        # recipient = e.reply_to_message.from_user.username
+        recipient = f"{e.reply_to_message.from_user.id}"
+        recipient_username = e.reply_to_message.from_user.username
     except Exception:
         # check 2nd argument
-        try:
-            recipient = re.search("@[^ ]+", e.text)[0]
-        except:
-            print("No recipient found in your message!")
-            return
+        # try:
+        #     recipient = re.search("@[^ ]+", e.text)[0]
+        #     recipient_username = recipient.lstrip("@")
+        # except:
+        bot.send_message(e.chat.id, "Could not determine a recipient!")
+        bot.send_message(e.chat.id, "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                         parse_mode="Markdown")
+        return
 
     try:
         recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
     except Exception:
-        bot.send_message(e.chat.id, f"Recipient {recipient} does not have a wallet yet. "
-                                    f"DM the bot with /create_wallet to create a new wallet.")
+        bot.send_message(e.chat.id, f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
+                                    f"DM the bot with /create_wallet to create a new wallet.",
+                         parse_mode="html")
         return
 
-    amount = float(re.search("(\d+([.,]\d+)?) ?KAS", e.text, re.IGNORECASE)[1].replace(",", "."))
-
+    try:
+        amount = float(re.search("(\d+([.,]\d+)?) ?KAS", e.text, re.IGNORECASE)[1].replace(",", "."))
+    except Exception:
+        bot.send_message(e.chat.id, "Can't parse the amount.")
+        bot.send_message(e.chat.id, "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                         parse_mode="Markdown")
     try:
         send_kas_and_log(sender,
                          recipient,
-                         amount * 100000000,
-                         e.chat.id)
+                         round(amount * 100000000),
+                         e.chat.id,
+                         recipient_username=recipient_username)
     except WalletInsufficientBalanceError:
         bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
 
@@ -541,8 +610,9 @@ def create_wallet(e):
         return
 
     try:
-        wallet = create_new_wallet(get_wallet_pw(e.from_user.username),
-                                   username_to_uuid(e.from_user.username))
+        user_id = e.from_user.id
+        wallet = create_new_wallet(get_wallet_pw(f"{user_id}"),
+                                   username_to_uuid(f"{user_id}"))
         seed = wallet["mnemonic"]
         bot.send_message(e.chat.id, f"Wallet creation successful. Your kaspa address is:"
                                     f"\n`{wallet['publicAddress']}`"
@@ -552,21 +622,38 @@ def create_wallet(e):
                                     f" responsible for any issues or losses that may occur with the use of this wallet."
                                     f" Use at your own risk.",
                          parse_mode="Markdown")
+
+        try:
+            send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
+            bot.send_message(e.chat.id, "Our Kaspa member @Xemo89 gifted you 1 KAS for demo issues. "
+                                        "Say thank you to him ;-)")
+        except:
+            logging.exception("Kaspa start tip didn't work.")
+
+
     except WalletCreationError:
-        bot.send_message(e.chat.id, "Wallet already created. Use /my_wallet")
+        bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
 
 
-@bot.message_handler(commands=["my_wallet"], chat_types=['private'])
-def my_wallet(e):
-    print()
+@bot.message_handler(commands=["wallet_info"])
+def check_wallet(e):
     try:
-        wallet = get_wallet(username_to_uuid(e.from_user.username)
-                            # ,get_wallet_pw(e.from_user.username)
+        user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
+        username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json else f"{e.from_user.username}"
+
+        wallet = get_wallet(username_to_uuid(f"{user_id}")
+                            # ,get_wallet_pw(username)
                             )
 
+        show_button = InlineKeyboardMarkup([[InlineKeyboardButton("Show in explorer",
+                                                                  url=f"https://explorer.kaspa.org/addresses/{wallet['publicAddress']}")]])
+
         wallet_balance = kaspa_api.get_balance(wallet["publicAddress"])["balance"] / 100000000
-        bot.send_message(e.chat.id, f'Wallet:\n`{wallet["publicAddress"]}`\nBalance:\n  *{wallet_balance} KAS*',
-                         parse_mode="Markdown")
+        bot.send_message(e.chat.id,
+                         f'@{username} telegram wallet is:\n`{wallet["publicAddress"]}`\nBalance:\n  *{wallet_balance} KAS*',
+                         parse_mode="Markdown",
+                         reply_markup=show_button)
+
     except WalletNotFoundError:
         bot.send_message(e.chat.id, f'No KAS wallet found. Use /create_wallet')
 
@@ -576,14 +663,22 @@ def progress_bar(perc):
     return green_boxes * "🟩" + "⬜" * (8 - green_boxes)
 
 
-def send_kas_and_log(sender_username, to_address, amount, chat_id):
+def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_username=None, inclusiveFee=False):
     tx_id = create_tx(username_to_uuid(sender_username),
                       get_wallet_pw(sender_username),
                       to_address,
-                      amount)
+                      amount,
+                      inclusiveFee=inclusiveFee)
+
+    msg_amount = f"{amount / 100000000:.8f}"
+
+    if "." in msg_amount:
+        msg_amount = msg_amount.rstrip("0.")
 
     message = bot.send_message(chat_id,
-                               f"Sending *{amount / 100000000} KAS* to @{sender_username}\n   [{to_address[:16]}...{to_address[-10:]}](https://explorer.kaspa.org/addresses/{to_address})\n\n"
+                               f"Sending *{msg_amount} KAS* to "
+                               f"{f'@{recipient_username}' if recipient_username else ''}"
+                               f"\n   [{to_address[:16]}...{to_address[-10:]}](https://explorer.kaspa.org/addresses/{to_address})\n\n"
                                f"TX-ID\n"
                                f"   [{tx_id[:6]}...{tx_id[-6:]}](https://explorer.kaspa.org/txs/{tx_id}) ✅\n"
                                f"Block-ID\n"
@@ -591,7 +686,7 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id):
                                parse_mode="Markdown",
                                disable_web_page_preview=True)
 
-    TX_CHECKER[tx_id] = message
+    TX_CHECKER[tx_id] = (time.time(), message)
 
 
 def get_price_message():
@@ -681,14 +776,15 @@ def check_tx_ids():
 
         if TX_CHECKER:
             done_tx_ids = []
-            for tx_id, message in TX_CHECKER.items():
+            for tx_id, tx_object in dict(TX_CHECKER).items():
+                start_time, message = tx_object
                 stop_time = time.time()
                 resp = requests.get(fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true")
                 resp = resp.json()
 
                 # go through blocks and check tx_id
                 for block in resp["blocks"]:
-                    if tx_id not in done_tx_ids and tx_id in block["verboseData"]["transactionIds"]:
+                    if tx_id in TX_CHECKER and tx_id in block["verboseData"]["transactionIds"]:
                         block_hash = block["verboseData"]["hash"]
 
                         old_html = message.html_text
@@ -697,25 +793,29 @@ def check_tx_ids():
 
                         new_html = new_html.replace("Sending", "Sent")
 
-                        new_html += f"\nTime needed:\n   {stop_time - message.date:.02f}s"
+                        new_html += f"\nTime needed:\n   ~ {stop_time - start_time:.02f}s"
 
                         bot.edit_message_text(new_html,
                                               chat_id=message.chat.id,
                                               message_id=message.message_id,
                                               parse_mode="html",
-                                              disable_web_page_preview=True)
-                        done_tx_ids.append(tx_id)
+                                              disable_web_page_preview=True,
+                                              reply_markup=InlineKeyboardMarkup(
+                                                  [[InlineKeyboardButton("Show TX",
+                                                                         url=f"https://explorer.kaspa.org/txs/{tx_id}")],
+                                                   [InlineKeyboardButton("Show block",
+                                                                         url=f"https://explorer.kaspa.org/blocks/{block_hash}")]])
+                                              )
 
-            for done_tx_id in done_tx_ids:
-                print(f"removing {done_tx_id}")
-                TX_CHECKER.pop(done_tx_id)
+                        print(f"removing {tx_id}")
+                        TX_CHECKER.pop(tx_id)
 
-        if i == 40:
+        if i == 80:
             resp = requests.get(r"https://api.kaspa.org/info/network")
             start_block = resp.json()["tipHashes"][0]
             i = 0
 
-        time.sleep(1)
+        time.sleep(0.5)
 
 
 if __name__ == '__main__':
