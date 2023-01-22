@@ -515,7 +515,7 @@ def withdraw(e):
                          parse_mode="Markdown")
         return
 
-    if not (amount := re.search("(\d+([.,]\d+)?) ?KAS", e.text, re.IGNORECASE)):
+    if not (amount := re.search("(\d+([.,]\d+)?) ?(KAS)?", e.text, re.IGNORECASE)):
         bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
         return
     else:
