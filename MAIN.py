@@ -512,7 +512,7 @@ def withdraw(e):
         get_wallet(username_to_uuid(sender))
     except Exception:
         msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                          f"DM the bot with `/create_wallet` to create a new wallet.",
+                                          f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
                                parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -549,7 +549,7 @@ def tgwallet(e):
                      """<b>Welcome to Kaspa Telegram wallet!</b>
 I am the Kaspa Bot - here to help you to create a real wallet,
 which you can use with your telegram account!
-<b>To create a wallet DM me with the command /create_wallet.</b>
+<b>To create a wallet DM @kaspanet_bot with the command <code>/create_wallet</code>.</b>
 
 You will get your 12-word-seeds and your public address, which is static forever.
 To use your wallet or get information, use the following commands:
@@ -574,7 +574,8 @@ def send_kas(e):
         sender = f"{e.from_user.id}"
     except Exception:
         msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                          f"DM the bot with `/create_wallet` to create a new wallet.")
+                                          f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
+                               parse_mode="Markdown")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -604,7 +605,7 @@ def send_kas(e):
     except Exception:
         msg = bot.send_message(e.chat.id,
                                f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
-                               f"DM the bot with /create_wallet to create a new wallet.",
+                               f"DM @kaspanet_bot with /create_wallet to create a new wallet.",
                                parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -640,7 +641,7 @@ def send_kas(e):
 @bot.message_handler(commands=["create_wallet"])
 def create_wallet(e):
     if e.chat.type != "private":
-        msg = bot.send_message(e.chat.id, "Please use a direct message (DM) to create a new wallet.")
+        msg = bot.send_message(e.chat.id, "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -702,7 +703,7 @@ def check_wallet(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
     except WalletNotFoundError:
-        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use `/create_wallet` via DM to create a wallet.',
+        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use `/create_wallet` via DM to to @kaspanet_bot to create a wallet.',
                                parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -793,26 +794,30 @@ DONATION_CHANNELS = [-1001589070884,
 def check_donations():
     donation_announced = 0
     while True:
-        donation_addr = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
         try:
-            donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+            donation_addr = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
+            try:
+                donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+            except Exception:
+                time.sleep(1)
+                continue
+
+            if donation_balance != donation_announced:
+                if donation_announced:
+                    for c_id in DONATION_CHANNELS:
+                        bot.send_message(c_id,
+                                         f"*Donation received for*\n"
+                                         f"* Telegram bot\n"
+                                         f"* REST-API\n"
+                                         f"* Blockexplorer\n\n"
+                                         f"Did you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
+                                         f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
+                                         parse_mode="Markdown")
+
+                donation_announced = donation_balance
         except Exception:
-            time.sleep(1)
-            continue
+            logging.exception('Error checking donation address')
 
-        if donation_balance != donation_announced:
-            if donation_announced:
-                for c_id in DONATION_CHANNELS:
-                    bot.send_message(c_id,
-                                     f"*Donation received for*\n"
-                                     f"* Telegram bot\n"
-                                     f"* REST-API\n"
-                                     f"* Blockexplorer\n\n"
-                                     f"Did you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
-                                     f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
-                                     parse_mode="Markdown")
-
-            donation_announced = donation_balance
         time.sleep(60)
 
 
