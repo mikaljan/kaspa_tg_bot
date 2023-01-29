@@ -806,19 +806,19 @@ def check_donations():
                 if donation_announced:
                     for c_id in DONATION_CHANNELS:
                         bot.send_message(c_id,
-                                         f"*Donation received for*\n"
+                                         f"<b>Donation received for</b>\n"
                                          f"* Telegram bot\n"
                                          f"* REST-API\n"
                                          f"* Blockexplorer\n\n"
-                                         f"Did you see the super fast speed?\n\nThank you for *{donation_balance - donation_announced:,.0f} KAS* donated to \n"
-                                         f"```kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73```\nI appreciate ♥♥♥",
-                                         parse_mode="Markdown")
+                                         f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
+                                         f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
+                                         parse_mode="html")
 
                 donation_announced = donation_balance
         except Exception:
             logging.exception('Error checking donation address')
 
-        time.sleep(60)
+        time.sleep(5)
 
 
 def check_del_messages():
