@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import re
+import sys
 import threading
 import time
 from datetime import datetime
@@ -13,6 +14,7 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 import kaspa_api
+import tipping
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
 from plot import get_image_stream
@@ -29,6 +31,7 @@ logging.info('Starting TGBOT')
 DEBOUNCE_CACHE = {}
 
 TX_CHECKER = {}
+DELETE_MESSAGES_CACHE = []
 
 bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
 
@@ -508,16 +511,21 @@ def withdraw(e):
         sender = f"{e.from_user.id}"
         get_wallet(username_to_uuid(sender))
     except Exception:
-        bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                    f"DM the bot with /create_wallet to create a new wallet.")
+        msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                          f"DM the bot with `/create_wallet` to create a new wallet.",
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61}", e.text)):
-        bot.send_message(e.chat.id, "No valid *kaspa:* address found.",
-                         parse_mode="Markdown")
+        msg = bot.send_message(e.chat.id, "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
-    if not (amount := re.search("(\d+([.,]\d+)?) ?(KAS)?", e.text, re.IGNORECASE)):
+    if not (amount := re.search(" (\d+([.,]\d+)?)[ $]?(KAS)?", e.text, re.IGNORECASE)):
         bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
         return
     else:
@@ -525,11 +533,14 @@ def withdraw(e):
 
     inclusive_fee_match = re.search("inclusivefee", e.text, re.IGNORECASE)
 
-    send_kas_and_log(sender,
-                     to_address[0],
-                     round(amount * 100000000),
-                     e.chat.id,
-                     inclusiveFee=inclusive_fee_match is not None)
+    try:
+        send_kas_and_log(sender,
+                         to_address[0],
+                         round(amount * 100000000),
+                         e.chat.id,
+                         inclusiveFee=inclusive_fee_match is not None)
+    except tipping.WalletInsufficientBalanceError as ex:
+        bot.send_message(e.chat.id, f"{ex}")
 
 
 @bot.message_handler(commands=["telegram_wallet"])
@@ -546,12 +557,12 @@ To use your wallet or get information, use the following commands:
 <b>  /tip 1.23 KAS</b> - reply to someone's message and send him/her a tip.
 <b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
 """ +
-"\nPlease be advised that neither the dev nor any of the kaspa community is"
-"responsible for any issues or losses that may occur with the use of this wallet."
-"\nUse at your own risk."
+                     "\nPlease be advised that neither the dev nor any of the kaspa community is"
+                     "responsible for any issues or losses that may occur with the use of this wallet."
+                     "\nUse at your own risk."
 
-"\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>"
-"\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
+                     "\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>"
+                     "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
                      parse_mode="html")
 
 
@@ -562,8 +573,12 @@ def send_kas(e):
         # sender = e.from_user.username
         sender = f"{e.from_user.id}"
     except Exception:
-        bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                    f"DM the bot with /create_wallet to create a new wallet.")
+        msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                          f"DM the bot with `/create_wallet` to create a new wallet.")
+
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
+
         return
 
     try:
@@ -577,25 +592,41 @@ def send_kas(e):
         #     recipient = re.search("@[^ ]+", e.text)[0]
         #     recipient_username = recipient.lstrip("@")
         # except:
-        bot.send_message(e.chat.id, "Could not determine a recipient!")
-        bot.send_message(e.chat.id, "Reply to someone's message and write:\n `/tip X.XX KAS`.",
-                         parse_mode="Markdown")
+        msg = bot.send_message(e.chat.id, "Could not determine a recipient!\n"
+                                          "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     try:
         recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
     except Exception:
-        bot.send_message(e.chat.id, f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
-                                    f"DM the bot with /create_wallet to create a new wallet.",
-                         parse_mode="html")
+        msg = bot.send_message(e.chat.id,
+                               f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
+                               f"DM the bot with /create_wallet to create a new wallet.",
+                               parse_mode="html")
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
         return
 
     try:
-        amount = float(re.search("(\d+([.,]\d+)?) ?(KAS)?", e.text, re.IGNORECASE)[1].replace(",", "."))
+        amount = float(re.search(" (\d+([.,]\d+)?)[ $]?(KAS)?", e.text, re.IGNORECASE)[1].replace(",", "."))
     except Exception:
-        bot.send_message(e.chat.id, "Can't parse the amount.")
-        bot.send_message(e.chat.id, "Reply to someone's message and write:\n `/tip X.XX KAS`.",
-                         parse_mode="Markdown")
+        msg = bot.send_message(e.chat.id, "Can't parse the amount.\n"
+                                          "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
+        return
+
+    if amount < 0.00001:
+        msg = bot.send_message(e.chat.id, "Minimum amount is 0.00001 KAS",
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
+        return
+
     try:
         send_kas_and_log(sender,
                          recipient,
@@ -609,7 +640,10 @@ def send_kas(e):
 @bot.message_handler(commands=["create_wallet"])
 def create_wallet(e):
     if e.chat.type != "private":
-        bot.send_message(e.chat.id, "To create a new wallet, please use a direct message to me.")
+        msg = bot.send_message(e.chat.id, "Please use a direct message (DM) to create a new wallet.")
+
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     try:
@@ -638,7 +672,7 @@ def create_wallet(e):
         bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
 
 
-@bot.message_handler(commands=["wallet_info"])
+@bot.message_handler(commands=["wallet_info", "wi"])
 def check_wallet(e):
     try:
         user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
@@ -659,13 +693,19 @@ def check_wallet(e):
             wallet_balance = wallet_balance.rstrip("0")
             wallet_balance = wallet_balance.rstrip(".")
 
-        bot.send_message(e.chat.id,
-                         f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
-                         parse_mode="html",
-                         reply_markup=show_button)
+        msg = bot.send_message(e.chat.id,
+                               f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
+                               parse_mode="html",
+                               reply_markup=show_button)
+
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
     except WalletNotFoundError:
-        bot.send_message(e.chat.id, f'No KAS wallet found. Use /create_wallet')
+        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use `/create_wallet` via DM to create a wallet.',
+                               parse_mode="Markdown")
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
 
 def progress_bar(perc):
@@ -776,68 +816,97 @@ def check_donations():
         time.sleep(60)
 
 
+def check_del_messages():
+    while True:
+        for ts, chat_id, msg_id in list(DELETE_MESSAGES_CACHE):
+            if time.time() >= ts:
+                DELETE_MESSAGES_CACHE.remove((ts, chat_id, msg_id))
+                try:
+                    bot.delete_message(chat_id, msg_id)
+                except Exception:
+                    logging.exception('Can not remove this message. Sorry')
+
+        time.sleep(2)
+
+
 def check_tx_ids():
     resp = requests.get(r"https://api.kaspa.org/info/network")
     start_block = resp.json()["tipHashes"][0]
 
     i = 0
 
+    logging.info("Starting Thread: check_tx_ids")
+
     while True:
         i += 1
 
-        if TX_CHECKER:
-            done_tx_ids = []
-            for tx_id, tx_object in dict(TX_CHECKER).items():
-                start_time, message = tx_object
-                stop_time = time.time()
-                resp = requests.get(fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true")
-                resp = resp.json()
+        try:
 
-                # go through blocks and check tx_id
-                for block in resp["blocks"]:
-                    if tx_id in TX_CHECKER and tx_id in block["verboseData"]["transactionIds"]:
-                        block_hash = block["verboseData"]["hash"]
+            if TX_CHECKER:
+                for tx_id, tx_object in dict(TX_CHECKER).items():
+                    start_time, message = tx_object
+                    stop_time = time.time()
+                    try:
+                        resp = requests.get(fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true")
+                        resp = resp.json()
+                    except Exception:
+                        time.sleep(0.3)
+                        continue
 
-                        old_html = message.html_text
-                        new_html = old_html.replace("<code>...</code>",
-                                                    f"<a href='https://explorer.kaspa.org/blocks/{block_hash}'>{block_hash[:6]}...{block_hash[-6:]}</a> ✅")
+                    # go through blocks and check tx_id
+                    for block in resp["blocks"]:
+                        if tx_id in TX_CHECKER and tx_id in block["verboseData"]["transactionIds"]:
+                            block_hash = block["verboseData"]["hash"]
 
-                        new_html = new_html.replace("Sending", "Sent")
+                            old_html = message.html_text
+                            new_html = old_html.replace("<code>...</code>",
+                                                        f"<a href='https://explorer.kaspa.org/blocks/{block_hash}'>{block_hash[:6]}...{block_hash[-6:]}</a> ✅")
 
-                        new_html += f"\nTime needed:\n   ~ {stop_time - start_time:.02f}s"
+                            new_html = new_html.replace("Sending", "Sent")
 
-                        bot.edit_message_text(new_html,
-                                              chat_id=message.chat.id,
-                                              message_id=message.message_id,
-                                              parse_mode="html",
-                                              disable_web_page_preview=True,
-                                              reply_markup=InlineKeyboardMarkup(
-                                                  [[InlineKeyboardButton("Show TX",
-                                                                         url=f"https://explorer.kaspa.org/txs/{tx_id}")],
-                                                   [InlineKeyboardButton("Show block",
-                                                                         url=f"https://explorer.kaspa.org/blocks/{block_hash}")]])
-                                              )
+                            new_html += f"\nTime needed:\n   ~ {stop_time - start_time:.02f}s"
 
-                        print(f"removing {tx_id}")
-                        TX_CHECKER.pop(tx_id)
+                            bot.edit_message_text(new_html,
+                                                  chat_id=message.chat.id,
+                                                  message_id=message.message_id,
+                                                  parse_mode="html",
+                                                  disable_web_page_preview=True,
+                                                  reply_markup=InlineKeyboardMarkup(
+                                                      [[InlineKeyboardButton("Show TX",
+                                                                             url=f"https://explorer.kaspa.org/txs/{tx_id}")],
+                                                       [InlineKeyboardButton("Show block",
+                                                                             url=f"https://explorer.kaspa.org/blocks/{block_hash}")]])
+                                                  )
 
-        if i == 80:
-            resp = requests.get(r"https://api.kaspa.org/info/network")
-            start_block = resp.json()["tipHashes"][0]
-            i = 0
+                            print(f"removing {tx_id}")
+                            TX_CHECKER.pop(tx_id)
 
-        time.sleep(0.5)
+            if i >= 80:
+                try:
+                    resp = requests.get(r"https://api.kaspa.org/info/network")
+                    start_block = resp.json()["tipHashes"][0]
+                except Exception:
+                    continue
+
+                i = 0
+
+            time.sleep(0.5)
+        except Exception:
+            logging.exception('Error in TX-checker-thread')
 
 
 if __name__ == '__main__':
     # send the request to the server and retrive the response
     # with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
-    t1 = threading.Thread(target=check_tx_ids)
+    t1 = threading.Thread(target=check_tx_ids, daemon=False)
     t1.start()
 
-    t2 = threading.Thread(target=check_donations)
+    t2 = threading.Thread(target=check_donations, daemon=False)
     t2.start()
+
+    t3 = threading.Thread(target=check_del_messages, daemon=False)
+    t3.start()
 
     while True:
         try:
