@@ -809,7 +809,8 @@ def check_donations():
                                          f"<b>Donation received for</b>\n"
                                          f"* Telegram bot\n"
                                          f"* REST-API\n"
-                                         f"* Blockexplorer\n\n"
+                                         f"* Blockexplorer\n"
+                                         f"* Telegram wallet feature\n\n"
                                          f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
                                          f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
                                          parse_mode="html")
