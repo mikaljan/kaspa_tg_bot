@@ -703,8 +703,8 @@ def check_wallet(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
     except WalletNotFoundError:
-        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use `/create_wallet` via DM to to @kaspanet_bot to create a wallet.',
-                               parse_mode="Markdown")
+        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
+                               parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
