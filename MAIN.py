@@ -561,7 +561,6 @@ To use your wallet or get information, use the following commands:
                      "responsible for any issues or losses that may occur with the use of this wallet."
                      "\nUse at your own risk."
 
-                     "\n\n<b>User @Xemo89 sponsored for the first new wallet creators 1 KAS for FREE! So go ahead and create your wallet fast!</b>"
                      "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
                      parse_mode="html")
 
@@ -663,8 +662,7 @@ def create_wallet(e):
 
         try:
             send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
-            bot.send_message(e.chat.id, "Our Kaspa member @Xemo89 gifted you 1 KAS for demo issues. "
-                                        "Say thank you to him ;-)")
+            bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.")
         except:
             logging.exception("Kaspa start tip didn't work.")
 
