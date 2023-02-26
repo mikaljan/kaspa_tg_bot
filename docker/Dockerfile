@@ -16,6 +16,8 @@ RUN apk --no-cache add \
   libpq-dev \
   dumb-init
 
+RUN pip install --upgrade cython
+
 RUN pip install \
   pipenv
 
