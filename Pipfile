@@ -8,6 +8,7 @@ pytelegrambotapi = "*"
 requests = "*"
 plotly = "*"
 pandas = "*"
+kaleido = "*"
 
 [dev-packages]
 
