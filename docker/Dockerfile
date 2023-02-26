@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM python:3.10-buster
 
 ARG REPO_DIR
 
@@ -15,8 +15,6 @@ RUN apk --no-cache add \
   linux-headers \
   libpq-dev \
   dumb-init
-
-RUN apk add py3-pip py3-numpy py3-pandas
 
 RUN pip install \
   pipenv
