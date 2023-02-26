@@ -701,7 +701,8 @@ def check_wallet(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
 
     except WalletNotFoundError:
-        msg = bot.send_message(e.chat.id, f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
+        msg = bot.send_message(e.chat.id,
+                               f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
                                parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -899,6 +900,46 @@ def check_tx_ids():
             logging.exception('Error in TX-checker-thread')
 
 
+def check_exchange_pool():
+    donation_announced = 0
+    while True:
+        donation_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
+        try:
+            donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+        except Exception:
+            time.sleep(1)
+            continue
+
+        if donation_balance != donation_announced:
+            if donation_announced:
+                if donation_balance - donation_announced > 1000:
+                    for c_id in DONATION_CHANNELS:
+                        bot.send_message(c_id,  # -1001589070884,
+                                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
+                                         f" We received a new donation of\n\n"
+                                         f" *{donation_balance - donation_announced:,.0f} KAS* for the new exchange"
+                                         f"\n\n♥♥♥",
+                                         parse_mode="Markdown")
+
+            donation_announced = donation_balance
+        time.sleep(60)
+
+@bot.message_handler(commands=["pool"], func=check_debounce(60 * 10))
+def pool(e):
+    pool_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
+    pool_balance = kaspa_api.get_balance(pool_addr)["balance"] / 100000000
+    bot.send_message(e.chat.id,
+                     f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
+                     f"----------------------\n"
+                     f"*FILLED:*\n"
+                     f"  *{round(pool_balance):,.0f} KAS*\n"
+                     f"      of needed ~ *6M KAS*\n\n"
+                     f"*{round(pool_balance) / 10000 / 6:.02f}% done.*\n"
+                     f"{progress_bar(round(pool_balance) / 10000 / 6)}",
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
+
+
 if __name__ == '__main__':
     # send the request to the server and retrive the response
     # with KaspaInterface.kaspa_connection() as client:
@@ -911,6 +952,9 @@ if __name__ == '__main__':
 
     t3 = threading.Thread(target=check_del_messages, daemon=False)
     t3.start()
+
+    t4 = threading.Thread(target=check_exchange_pool, daemon=False)
+    t4.start()
 
     while True:
         try:
