@@ -12,10 +12,6 @@ RUN pip install \
 
 WORKDIR /app
 
-USER api
-
-COPY --chown=api:api . /app
-
 RUN pipenv install --deploy
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
