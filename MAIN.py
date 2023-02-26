@@ -749,7 +749,7 @@ def get_price_message():
 
     try:
         symbol = coin_info['tickers'][0]['base']
-    except (ValueError, IndexError):
+    except (ValueError, IndexError, KeyError):
         symbol = coin.upper()
 
     price_change_1h = coin_info['market_data']['price_change_percentage_1h_in_currency'].get('usd', 0)
