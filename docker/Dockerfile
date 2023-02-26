@@ -7,15 +7,6 @@ EXPOSE 8000
 ARG version
 ENV VERSION=$version
 
-RUN apk --no-cache add \
-  git \
-  gcc \
-  libc-dev \
-  build-base \
-  linux-headers \
-  libpq-dev \
-  dumb-init
-
 RUN pip install \
   pipenv
 
