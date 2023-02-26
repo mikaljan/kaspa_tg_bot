@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: supertypo/kaspa-db-filler:${{github.ref_name}}, supertypo/kaspa-db-filler:latest
+          tags: lamer1/kaspa-tg-bot:${{github.ref_name}}, lamer1/kaspa-tg-bot:latest
           file: ./docker/Dockerfile
           build-args: |
             version=${{github.ref_name}}
