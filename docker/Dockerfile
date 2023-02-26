@@ -12,6 +12,8 @@ RUN pip install \
 
 WORKDIR /app
 
+COPY . /app
+
 RUN pipenv install --deploy
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
