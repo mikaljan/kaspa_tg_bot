@@ -444,27 +444,27 @@ def buy(e):
                      f"These are *unofficial* groups.\n"
                      f"Use with caution! ⚠️ \n"
                      f"----------------------------------\n"
-                     f"🇦🇪 [https://t.me/kaspa_arabic]\n"
-                     f"🇨🇳 [https://t.me/kaspa_chinese]\n"
-                     f"🇩🇪 [https://t.me/KaspaGerman]\n"
-                     f"🇪🇸 [https://t.me/kaspaesp]\n"
-                     f"🇫🇷 [https://t.me/kasfrench]\n"
+                     f"🇦🇪 [https://t.me/kaspa_arabic](https://t.me/kaspa_arabic)\n"
+                     f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
+                     f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
+                     f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
+                     f"🇫🇷 [https://t.me/kasfrench](https://t.me/kasfrench)\n"
                      f"🇮🇳 [https://t.me/kaspaindia](https://t.me/kaspaindia)\n"
-                     f"🇮🇩 [https://t.me/Kaspa_Indonesian]\n"
-                     f"🇮🇱 [https://t.me/kaspaisrael]\n"
-                     f"🇮🇹 [https://t.me/kaspaitalia]\n"
-                     f"🇯🇵 [https://t.me/Kaspa_Japan]\n"
-                     f"🇰🇷 [https://t.me/kaspa_korea]\n"
-                     f"🇮🇷 [https://t.me/Kaspa_persian]\n"
-                     f"🇵🇭 [http://t.me/kaspa_ph]\n"
-                     f"🇵🇱 [https://t.me/Kaspa_Poland]\n"
-                     f"🇵🇹🇧🇷 [https://t.me/kaspa_portugues]\n"
-                     f"🇳🇱 [https://t.me/Kaspa_Dutch]\n"
-                     f"🇷🇴 [https://t.me/KaspaRomania]\n"
-                     f"🇷🇺 [https://t.me/kaspa_rus]\n"
-                     f"🇹🇷 [https://t.me/KaspaTurk]\n"
-                     f"🇻🇳 [https://t.me/Kaspa_VN]\n"
-                     f"🇷🇸 [https://t.me/kaspa_balkan]",
+                     f"🇮🇩 [https://t.me/Kaspa_Indonesian](https://t.me/Kaspa_Indonesian)\n"
+                     f"🇮🇱 [https://t.me/kaspaisrael](https://t.me/kaspaisrael)\n"
+                     f"🇮🇹 [https://t.me/kaspaitalia](https://t.me/kaspaitalia)\n"
+                     f"🇯🇵 [https://t.me/Kaspa_Japan](https://t.me/Kaspa_Japan)\n"
+                     f"🇰🇷 [https://t.me/kaspa_korea](https://t.me/kaspa_korea)\n"
+                     f"🇮🇷 [https://t.me/Kaspa_persian](https://t.me/Kaspa_persian)\n"
+                     f"🇵🇭 [http://t.me/kaspa_ph](http://t.me/kaspa_ph)\n"
+                     f"🇵🇱 [https://t.me/Kaspa_Poland](https://t.me/Kaspa_Poland)\n"
+                     f"🇵🇹🇧🇷 [https://t.me/kaspa_portugues](https://t.me/kaspa_portugues)\n"
+                     f"🇳🇱 [https://t.me/Kaspa_Dutch](https://t.me/Kaspa_Dutch)\n"
+                     f"🇷🇴 [https://t.me/KaspaRomania](https://t.me/KaspaRomania)\n"
+                     f"🇷🇺 [https://t.me/kaspa_rus](https://t.me/kaspa_rus)\n"
+                     f"🇹🇷 [https://t.me/KaspaTurk](https://t.me/KaspaTurk)\n"
+                     f"🇻🇳 [https://t.me/Kaspa_VN](https://t.me/Kaspa_VN)\n"
+                     f"🇷🇸 [https://t.me/kaspa_balkan](https://t.me/kaspa_balkan)",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
 
@@ -923,6 +923,7 @@ def check_exchange_pool():
 
             donation_announced = donation_balance
         time.sleep(60)
+
 
 @bot.message_handler(commands=["pool"], func=check_debounce(60 * 10))
 def pool(e):
