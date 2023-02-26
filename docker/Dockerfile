@@ -16,13 +16,11 @@ RUN apk --no-cache add \
   libpq-dev \
   dumb-init
 
-RUN pip install --upgrade cython
+RUN apk add py3-pip py3-numpy py3-pandas
 
 RUN pip install \
   pipenv
 
-RUN pip install \
-  pandas
 
 
 RUN addgroup -S -g 55746 api \
