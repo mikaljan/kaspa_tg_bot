@@ -10,11 +10,6 @@ ENV VERSION=$version
 RUN pip install \
   pipenv
 
-
-
-RUN addgroup -S -g 55746 api \
-  && adduser -h /app -S -D -g '' -G api -u 55746 api
-
 WORKDIR /app
 
 USER api
