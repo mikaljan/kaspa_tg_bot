@@ -925,6 +925,13 @@ def check_exchange_pool():
         time.sleep(60)
 
 
+@bot.message_handler(commands=["version"])
+def version(e):
+    bot.send_message(e.chat.id,
+                     f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
+                     parse_mode="Markdown")
+
+
 @bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
 def pool(e):
     try:
