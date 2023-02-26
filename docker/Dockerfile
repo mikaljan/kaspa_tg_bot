@@ -19,6 +19,10 @@ RUN apk --no-cache add \
 RUN pip install \
   pipenv
 
+RUN pip install \
+  pandas
+
+
 RUN addgroup -S -g 55746 api \
   && adduser -h /app -S -D -g '' -G api -u 55746 api
 
