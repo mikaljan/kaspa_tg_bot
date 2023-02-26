@@ -912,7 +912,7 @@ def check_exchange_pool():
 
         if donation_balance != donation_announced:
             if donation_announced:
-                if donation_balance - donation_announced > 1000:
+                if donation_balance - donation_announced >= 100:
                     for c_id in DONATION_CHANNELS:
                         bot.send_message(c_id,  # -1001589070884,
                                          f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
