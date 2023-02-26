@@ -3,7 +3,6 @@ import logging
 import math
 import os
 import re
-import sys
 import threading
 import time
 from datetime import datetime
@@ -14,6 +13,7 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 import kaspa_api
+import poolo
 import tipping
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
@@ -925,20 +925,34 @@ def check_exchange_pool():
         time.sleep(60)
 
 
-@bot.message_handler(commands=["pool"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
 def pool(e):
-    pool_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
-    pool_balance = kaspa_api.get_balance(pool_addr)["balance"] / 100000000
-    bot.send_message(e.chat.id,
-                     f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
-                     f"----------------------\n"
-                     f"*FILLED:*\n"
-                     f"  *{round(pool_balance):,.0f} KAS*\n"
-                     f"      of needed ~ *6M KAS*\n\n"
-                     f"*{round(pool_balance) / 10000 / 6:.02f}% done.*\n"
-                     f"{progress_bar(round(pool_balance) / 10000 / 6)}",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    try:
+        pool_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
+        pool_balance = kaspa_api.get_balance(pool_addr)["balance"] / 100000000
+
+        d = poolo.get_data("7a0515b3-c533-40ab-a150-8d8c8488aea9")
+        percent_poolo = d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100
+
+        bot.send_message(e.chat.id,
+                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
+                         f"----------------------\n"
+                         f"*PART 1 (KAS):*\n"
+                         f"  *{round(pool_balance):,.0f} KAS*\n"
+                         f"      of needed ~ *6M KAS*\n\n"
+                         f"*{round(pool_balance) / 10000 / 6:.02f}% done.*\n"
+                         f"{progress_bar(round(pool_balance) / 10000 / 6)}\n\n"
+                         f"*PART 2 (USD):*\n"
+                         f'   Link: [Link to Pool](https://app.poolo.io/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9)\n'
+                         f'   Title: *{d["data"]["title"]}*\n'
+                         f'   Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n'
+                         f'*{round(percent_poolo):.02f}% done.*\n'
+                         f'{progress_bar(percent_poolo)}',
+
+                         parse_mode="Markdown",
+                         disable_web_page_preview=True)
+    except Exception:
+        logging.exception('Exception requesting pool info')
 
 
 if __name__ == '__main__':
