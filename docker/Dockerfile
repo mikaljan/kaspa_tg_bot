@@ -17,13 +17,7 @@ RUN apk --no-cache add \
   dumb-init
 
 RUN pip install \
-  pytelegrambotapi
-
-RUN pip install \
-  requests
-
-RUN pip install \
-  plotly
+  pipenv
 
 RUN addgroup -S -g 55746 api \
   && adduser -h /app -S -D -g '' -G api -u 55746 api
@@ -34,6 +28,8 @@ USER api
 
 COPY --chown=api:api . /app
 
+RUN pipenv install --deploy
+
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-CMD python main.py
+CMD pipenv run python main.py
