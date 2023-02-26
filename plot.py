@@ -1,6 +1,6 @@
 import io
 
-import plotly_express as px
+import plotly.express as px
 import requests
 from datetime import datetime
 
@@ -46,3 +46,7 @@ def get_image_stream():
     f.seek(0)
 
     return f
+
+if __name__ == '__main__':
+
+    print(get_image_stream())
