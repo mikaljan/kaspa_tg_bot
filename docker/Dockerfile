@@ -16,6 +16,4 @@ COPY . /app
 
 RUN pipenv install --deploy
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-
 CMD pipenv run python MAIN.py
