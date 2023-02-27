@@ -448,6 +448,7 @@ def buy(e):
                      f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
                      f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
                      f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
+                     f"🇫🇮 [https://t.me/kaspa_finland](https://t.me/kaspa_finland)\n"
                      f"🇫🇷 [https://t.me/kasfrench](https://t.me/kasfrench)\n"
                      f"🇮🇳 [https://t.me/kaspaindia](https://t.me/kaspaindia)\n"
                      f"🇮🇩 [https://t.me/Kaspa_Indonesian](https://t.me/Kaspa_Indonesian)\n"
