@@ -672,6 +672,26 @@ def create_wallet(e):
         bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
 
 
+@bot.message_handler(commands=["kaspacity"])
+def kaspacity(e):
+    with open("res/kaspacity.jpg", "rb") as f:
+        bot.send_photo(e.chat.id,
+                       f,
+                       f'''Do you want to play around with live KASPA transactions or just show it to a friend?
+
+Try out this demonstrator! Head to the office, enter the building and get a FREE $KAS! After that, you can spend it in the restaurant or the shopping mall..
+
+So is Kaspa usable in the real world? I would say so, yes!
+
+https://kaspagames.org/kaspacity/
+
+Thanks to everyone who helped with the game.
+
+Have fun! 
+Rob 🚀 lAmeR
+''')
+
+
 @bot.message_handler(commands=["wallet_info", "wi"])
 def check_wallet(e):
     try:
