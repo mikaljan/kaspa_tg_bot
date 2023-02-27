@@ -119,11 +119,15 @@ def callback_query_price_update(call):
             return
 
         try:
-            bot.edit_message_media(InputMedia(type='photo', media=get_image_stream(days)), call.message.chat.id, call.message.id)
-            bot.edit_message_caption(message, call.message.chat.id, call.message.id,
-                                     parse_mode="markdown",
-                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                              callback_data="cb_update")]]))
+            bot.edit_message_media(InputMedia(type='photo',
+                                              media=get_image_stream(days),
+                                              caption=message,
+                                              parse_mode="markdown"),
+                                   call.message.chat.id,
+                                   call.message.id,
+                                   reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                            callback_data="cb_update")]]))
+
         except ApiTelegramException as e:
             if "message is not modified" not in str(e):
                 raise
