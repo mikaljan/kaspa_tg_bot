@@ -5,9 +5,16 @@ import requests
 from datetime import datetime
 
 import pandas
+from cachetools.func import ttl_cache
 
-def get_image_stream():
-    d = requests.get("https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=1").json()
+@ttl_cache(ttl=30)
+def request_market_chart(days=1):
+    print("requesting chart")
+    return requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}").json()
+
+def get_image_stream(days=1):
+
+    d = request_market_chart(days)
 
     data = [(datetime.utcfromtimestamp(x[0] / 1000), x[1]) for x in d["prices"]]
     a = pandas.DataFrame(data, columns=["Time", "USD"])
@@ -18,11 +25,11 @@ def get_image_stream():
         y="USD",
         template="plotly_dark"
     )
-
+    label_days = "24h" if days == 1 else f"{days}d"
     basic_plot.update_xaxes(title_font_size=15)
     basic_plot.update_yaxes(title_font_size=15)
     basic_plot.update_layout(
-        title="KAS / USD chart - 24h",
+        title=f"KAS / USD chart - {label_days}",
         font={
             "size": 15,
             "color": "#F6F5F4"

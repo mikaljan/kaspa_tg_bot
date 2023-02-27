@@ -11,7 +11,7 @@ import requests
 from cachetools.func import ttl_cache
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 
 import kaspa_api
 import poolo
@@ -108,13 +108,18 @@ def ignore_channels(ignore_ids):
 def callback_query_price_update(call):
     try:
         try:
-            message = get_price_message()
+            days = int(re.search("for (\d+)d", call.message.caption)[1])
+        except Exception:
+            days = 1
 
-        except Exception as e:
-            print(f'Raised exception: {e}')
+        try:
+            message = get_price_message(days)
+        except Exception:
+            logging.exception('Exception at price update')
             return
 
         try:
+            bot.edit_message_media(InputMedia(type='photo', media=get_image_stream(days)), call.message.chat.id, call.message.id)
             bot.edit_message_caption(message, call.message.chat.id, call.message.id,
                                      parse_mode="markdown",
                                      reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
@@ -147,10 +152,10 @@ def callback_query_hashrate_update(call):
                 raise
 
         bot.answer_callback_query(call.id)
-    except TimeoutError as e:
-        print(f'Exception raised: {e}')
-    except Exception as e:
-        print(str(e))
+    except TimeoutError:
+        logging.exception('Exception at hashrate update')
+    except Exception :
+        logging.exception('Exception at hashrate update')
 
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
@@ -238,15 +243,19 @@ def price(e):
                              f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
-                msg = get_price_message()
+                try:
+                    days = int(re.search(r"(\d+)d", e.text)[1])
+                except Exception:
+                    days = 1
+                msg = get_price_message(days)
                 bot.send_photo(e.chat.id,
-                               get_image_stream(),
+                               get_image_stream(days),
                                caption=msg,
                                parse_mode="Markdown",
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                         callback_data="cb_update")]]))
             except Exception:
-                logging.exception(f'Raised exception: {e}')
+                logging.exception(f'Raised exception')
     except Exception as e:
         logging.exception(str(e))
 
@@ -359,7 +368,7 @@ def mining_reward(e):
                              f"*Mining rewards for {match['dec']} {suffix[:2].upper()}/s*\n" + MINING_CALC(rewards),
                              parse_mode="Markdown")
     except Exception:
-        print(f'Raised exception: {e}')
+        logging.exception('Exception at /mr')
 
 
 @bot.message_handler(commands=["id"])
@@ -393,8 +402,9 @@ def mcap(e):
                          f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
                          f"\n```",
                          parse_mode="Markdown")
-    except Exception as e:
-        print(f'Raised exception: {e}')
+    except Exception:
+        logging.exception(f'Raised exception in mcap')
+
 
 
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
@@ -408,8 +418,8 @@ def max_hashrate(e):
                          f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
                          f"  Block {max_hashrate['blockheader']['hash'][:8]}",
                          parse_mode="Markdown")
-    except Exception as e:
-        print(f'Raised exception: {e}')
+    except Exception:
+        logging.exception(f'Raised exception in maxhash')
 
 
 @bot.message_handler(commands=["id"], func=check_only_private)
@@ -768,7 +778,7 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_use
     TX_CHECKER[tx_id] = (time.time(), message)
 
 
-def get_price_message():
+def get_price_message(days):
     coin = "kaspa"
     coin_info = get_coin_info()
 
@@ -787,7 +797,7 @@ def get_price_message():
     rank = coin_info["market_data"]["market_cap_rank"]
     volume = coin_info["market_data"]["total_volume"]["usd"]
 
-    message = f"📈 Price Update for 📈\n" \
+    message = f"📈 Price Update for {days}d 📈\n" \
               f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
               f"{'-' * 40}\n" \
               f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.6f} USD*\n\n" \
