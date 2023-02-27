@@ -950,7 +950,7 @@ def pool(e):
                          f"*{round(pool_balance) / 10000 / 6:.02f}% done.*\n"
                          f"{progress_bar(round(pool_balance) / 10000 / 6)}\n\n"
                          f"*PART 2 (USD):*\n"
-                         f'   Link: [Link to Pool](https://app.poolo.io/pool/640e4723-2f7f-45a9-b00f-81cc219b6ff9)\n'
+                         f'   Link: [Link to Pool](https://app.poolo.io/pool/7a0515b3-c533-40ab-a150-8d8c8488aea9)\n'
                          f'   Title: *{d["data"]["title"]}*\n'
                          f'   Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n'
                          f'*{round(percent_poolo):.02f}% done.*\n'
