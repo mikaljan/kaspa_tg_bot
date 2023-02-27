@@ -1,19 +1,18 @@
 import io
-
-import plotly.express as px
-import requests
 from datetime import datetime
 
 import pandas
+import plotly.express as px
+import requests
 from cachetools.func import ttl_cache
+
 
 @ttl_cache(ttl=30)
 def request_market_chart(days=1):
-    print("requesting chart")
     return requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}").json()
 
-def get_image_stream(days=1):
 
+def get_image_stream(days=1):
     d = request_market_chart(days)
 
     data = [(datetime.utcfromtimestamp(x[0] / 1000), x[1]) for x in d["prices"]]
@@ -53,7 +52,3 @@ def get_image_stream(days=1):
     f.seek(0)
 
     return f
-
-if __name__ == '__main__':
-
-    print(get_image_stream())
