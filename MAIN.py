@@ -963,6 +963,7 @@ def version(e):
 @bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
 def pool(e):
     try:
+        kas_needed = round(50000 / _get_kas_price())
         pool_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
         pool_balance = kaspa_api.get_balance(pool_addr)["balance"] / 100000000
 
@@ -974,9 +975,9 @@ def pool(e):
                          f"----------------------\n"
                          f"*PART 1 (KAS):*\n"
                          f"  *{round(pool_balance):,.0f} KAS*\n"
-                         f"      of needed ~ *6M KAS*\n\n"
-                         f"*{round(pool_balance) / 10000 / 6:.02f}% done.*\n"
-                         f"{progress_bar(round(pool_balance) / 10000 / 6)}\n\n"
+                         f"      of needed ~ *{kas_needed / 1000000:.02f}M KAS (50k USD)*\n\n"
+                         f"*{pool_balance / kas_needed * 100:.02f}% done.*\n"
+                         f"{progress_bar(pool_balance / kas_needed * 100)}\n\n"
                          f"*PART 2 (USD):*\n"
                          f'   Link: [Link to Pool](https://app.poolo.io/pool/7a0515b3-c533-40ab-a150-8d8c8488aea9)\n'
                          f'   Title: *{d["data"]["title"]}*\n'
