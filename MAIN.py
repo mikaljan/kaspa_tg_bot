@@ -45,7 +45,6 @@ def check_debounce(seconds=60 * 60):
 
         try:
             is_rob = (args[0].from_user.id == 1922783296)
-            print(is_rob)
         except AttributeError:
             is_rob = False
 
@@ -253,7 +252,6 @@ def price(e):
 
 @ttl_cache(ttl=60)
 def get_coin_info():
-    print("checking coin info")
     try:
         resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
                             params={"tickers": False,
