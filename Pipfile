@@ -9,6 +9,7 @@ requests = "*"
 plotly = "*"
 pandas = "*"
 kaleido = "*"
+cachetools = "*"
 
 [dev-packages]
 

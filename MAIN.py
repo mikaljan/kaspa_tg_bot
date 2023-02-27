@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 
 import requests
+from cachetools.func import ttl_cache
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -42,7 +43,14 @@ def check_debounce(seconds=60 * 60):
     def wrapper(*args, **kwargs):
         cmd_id = f'{args[0].chat.id}{args[0].text.split("@")[0]}'
 
-        if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds or args[0].chat.id == -1001208691907:
+        try:
+            is_rob = (args[0].from_user.id == 1922783296)
+            print(is_rob)
+        except AttributeError:
+            is_rob = False
+
+        if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds \
+                          or args[0].chat.id == -1001208691907 or is_rob:
             DEBOUNCE_CACHE[cmd_id] = time.time()
         else:
             try:
@@ -243,8 +251,9 @@ def price(e):
     except Exception as e:
         logging.exception(str(e))
 
-
+@ttl_cache(ttl=60)
 def get_coin_info():
+    print("checking coin info")
     try:
         resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
                             params={"tickers": False,
@@ -795,7 +804,7 @@ def get_price_message():
 
     return message
 
-
+@ttl_cache(ttl=60)
 def _get_kas_price():
     try:
         resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
