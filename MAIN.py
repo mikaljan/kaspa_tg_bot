@@ -779,7 +779,7 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_use
                                f"TX-ID\n"
                                f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
                                f"Block-ID\n"
-                               f"   <code>...</code>",
+                               f"   ⏳ in progress",
                                parse_mode="html",
                                disable_web_page_preview=True)
 
@@ -911,7 +911,7 @@ def check_tx_ids():
                             block_hash = block["verboseData"]["hash"]
 
                             old_html = message.html_text
-                            new_html = old_html.replace("<code>...</code>",
+                            new_html = old_html.replace("⏳ in progress",
                                                         f"<a href='https://explorer.kaspa.org/blocks/{block_hash}'>{block_hash[:6]}...{block_hash[-6:]}</a> ✅")
 
                             new_html = new_html.replace("Sending", "Sent")
