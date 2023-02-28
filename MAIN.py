@@ -506,6 +506,8 @@ def miningpools(e):
                      f"[HEROMINERS](https://kaspa.herominers.com/)\n"
                      f"[KYIV KASPA POOL](https://kaspa.ixbase.info/)\n"
                      f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
+                     f"[P1 POOL](https://p1pool.com/)\n"
+                     f"[KRYPTEX](https://pool.kryptex.com/en/kas)\n"
                      f"[HASHPOOL](https://hashpool.com/coins/KAS)",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
