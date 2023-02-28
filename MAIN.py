@@ -701,7 +701,7 @@ def create_wallet(e):
 
 @bot.message_handler(commands=["kaspacity"])
 def kaspacity(e):
-    with open("res/kaspacity.jpg", "rb") as f:
+    with open("./res/kaspacity.jpg", "rb") as f:
         bot.send_photo(e.chat.id,
                        f,
                        f'''Do you want to play around with live KASPA transactions or just show it to a friend?
@@ -778,6 +778,8 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_use
                                f"Sending <b>{msg_amount} KAS</b> to "
                                f"{f'@{recipient_username}' if recipient_username else ''}"
                                f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
+                               f"Value\n"
+                               f"  <b>{amount / 100000000 * _get_kas_price():.02f} USD</b>\n"
                                f"TX-ID\n"
                                f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
                                f"Block-ID\n"
