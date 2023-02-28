@@ -118,6 +118,10 @@ def callback_query_price_update(call):
             logging.exception('Exception at price update')
             return
 
+        if re.findall("\d", message) == re.findall("\d", call.message.caption):
+            bot.answer_callback_query(call.id, "Price chart is up to date.", False, cache_time=10)
+            return
+
         try:
             bot.edit_message_media(InputMedia(type='photo',
                                               media=get_image_stream(days),
@@ -158,7 +162,7 @@ def callback_query_hashrate_update(call):
         bot.answer_callback_query(call.id)
     except TimeoutError:
         logging.exception('Exception at hashrate update')
-    except Exception :
+    except Exception:
         logging.exception('Exception at hashrate update')
 
 
@@ -262,6 +266,7 @@ def price(e):
                 logging.exception(f'Raised exception')
     except Exception as e:
         logging.exception(str(e))
+
 
 @ttl_cache(ttl=60)
 def get_coin_info():
@@ -408,7 +413,6 @@ def mcap(e):
                          parse_mode="Markdown")
     except Exception:
         logging.exception(f'Raised exception in mcap')
-
 
 
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
@@ -815,6 +819,7 @@ def get_price_message(days):
     # f"Total Supply:\n  {coin_info['market_data']['total_supply'] or 0:,}\n```"
 
     return message
+
 
 @ttl_cache(ttl=60)
 def _get_kas_price():
