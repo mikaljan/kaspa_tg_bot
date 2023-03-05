@@ -983,38 +983,6 @@ def version(e):
                      f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
                      parse_mode="Markdown")
 
-
-@bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
-def pool(e):
-    try:
-        kas_needed = round(50000 / _get_kas_price())
-        pool_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
-        pool_balance = kaspa_api.get_balance(pool_addr)["balance"] / 100000000
-
-        d = poolo.get_data("7a0515b3-c533-40ab-a150-8d8c8488aea9")
-        percent_poolo = d["data"]["verifiedContributedAmount"] / d["data"]["poolAmount"] * 100
-
-        bot.send_message(e.chat.id,
-                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
-                         f"----------------------\n"
-                         f"*PART 1 (KAS):*\n"
-                         f"  *{round(pool_balance):,.0f} KAS*\n"
-                         f"      of needed ~ *{kas_needed / 1000000:.02f}M KAS (50k USD)*\n\n"
-                         f"*{pool_balance / kas_needed * 100:.02f}% done.*\n"
-                         f"{progress_bar(pool_balance / kas_needed * 100)}\n\n"
-                         f"*PART 2 (USD):*\n"
-                         f'   Link: [Link to Pool](https://app.poolo.io/pool/7a0515b3-c533-40ab-a150-8d8c8488aea9)\n'
-                         f'   Title: *{d["data"]["title"]}*\n'
-                         f'   Pool: *{round(d["data"]["verifiedContributedAmount"])} USD* of {d["data"]["poolAmount"]} USD\n'
-                         f'*{round(percent_poolo):.02f}% done.*\n'
-                         f'{progress_bar(percent_poolo)}',
-
-                         parse_mode="Markdown",
-                         disable_web_page_preview=True)
-    except Exception:
-        logging.exception('Exception requesting pool info')
-
-
 if __name__ == '__main__':
     # send the request to the server and retrive the response
     # with KaspaInterface.kaspa_connection() as client:
