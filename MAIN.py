@@ -501,6 +501,7 @@ def miningpools(e):
                      f"----------------------\n"
                      f" *Kaspa mining pools*\n"
                      f"----------------------\n"
+                     f"[F2POOL](https://www.f2pool.com/coin/kaspa)\n"
                      f"[ACC-POOL](https://kaspa.acc-pool.pw/)\n"
                      f"[KASPA-POOL](https://kaspa-pool.org/)\n"
                      f"[HEROMINERS](https://kaspa.herominers.com/)\n"
