@@ -610,6 +610,7 @@ To use your wallet or get information, use the following commands:
 @bot.message_handler(commands=["tip"])
 def send_kas(e):
     recipient_username = ""
+    sender_name = e.from_user.full_name or ""
     try:
         # sender = e.from_user.username
         sender = f"{e.from_user.id}"
@@ -674,7 +675,8 @@ def send_kas(e):
                          recipient,
                          round(amount * 100000000),
                          e.chat.id,
-                         recipient_username=recipient_username)
+                         recipient_username=recipient_username,
+                         sender_name=sender_name)
     except WalletInsufficientBalanceError:
         bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
 
@@ -775,7 +777,10 @@ def progress_bar(perc):
     return green_boxes * "🟩" + "⬜" * (8 - green_boxes)
 
 
-def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_username=None, inclusiveFee=False):
+def send_kas_and_log(sender_username, to_address, amount, chat_id,
+                     recipient_username=None,
+                     inclusiveFee=False,
+                     sender_name=""):
     tx_id = create_tx(username_to_uuid(sender_username),
                       get_wallet_pw(sender_username),
                       to_address,
@@ -789,7 +794,7 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id, recipient_use
         msg_amount = msg_amount.rstrip(".")
 
     message = bot.send_message(chat_id,
-                               f"Sending <b>{msg_amount} KAS</b> to "
+                               f"{sender_name} sending <b>{msg_amount} KAS</b> to \n"
                                f"{f'@{recipient_username}' if recipient_username else ''}"
                                f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
                                f"Value\n"
