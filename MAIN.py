@@ -521,12 +521,25 @@ def links(e):
                      f" *Most important links*\n"
                      f"----------------------\n"
                      f"[Website](https://kaspa.org/)\n"
-                     f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
-                     f"[Block Explorer (BETA)](https://explorer.kaspa.org/)\n"
                      f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
                      f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
                      f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
                      f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
+                     parse_mode="Markdown",
+                     disable_web_page_preview=True)
+
+    # telegram bot features
+
+
+@bot.message_handler(commands=["explorers"], func=check_debounce(60 * 10))
+def links(e):
+    bot.send_message(e.chat.id,
+                     f"----------------------\n"
+                     f" *Kaspa explorers*\n"
+                     f"----------------------\n"
+                     f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
+                     f"[Block Explorer](https://explorer.kaspa.org/)\n"
+                     f"[KAS FYI](https://kas.fyi/)\n",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
 
@@ -982,6 +995,7 @@ def version(e):
     bot.send_message(e.chat.id,
                      f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
                      parse_mode="Markdown")
+
 
 if __name__ == '__main__':
     # send the request to the server and retrive the response
