@@ -489,6 +489,7 @@ def buy(e):
                      f"🇷🇴 [https://t.me/kaspa_ro](https://t.me/kaspa_ro)\n"
                      f"🇷🇺 [https://t.me/kaspa_rus](https://t.me/kaspa_rus)\n"
                      f"🇹🇷 [https://t.me/KaspaTurk](https://t.me/KaspaTurk)\n"
+                     f"🇹🇷 NEW [https://t.me/KaspaTr](https://t.me/KaspaTr)\n"
                      f"🇻🇳 [https://t.me/Kaspa_VN](https://t.me/Kaspa_VN)\n"
                      f"🇷🇸 [https://t.me/kaspa_balkan](https://t.me/kaspa_balkan)",
                      parse_mode="Markdown",
