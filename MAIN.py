@@ -452,6 +452,7 @@ def buy(e):
                      f"    💰   *Exchanges*\n"
                      f"----------------------------------\n"
                      f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
+                     f" *Gate io COMING SOON* [https://gate.io/]\n"
                      f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                      f" *Txbit* [https://txbit.io/]\n"
                      f" *Exibitron* [https://www.exbitron.com/]\n"
