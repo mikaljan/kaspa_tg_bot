@@ -345,7 +345,9 @@ def wallet(e):
                                     '*Kaspa for desktop (KDX)*:\n'
                                     '  https://kdx.app/\n'
                                     '*Web wallet*:\n'
-                                    '  https://wallet.kaspanet.io/',
+                                    '  https://wallet.kaspanet.io/\n'
+                                    '*Chainge*:\n'
+                                    '  https://www.chainge.finance/',
                          parse_mode="Markdown",
                          disable_web_page_preview=True)
     except Exception as e:
@@ -452,9 +454,10 @@ def buy(e):
                      f"    💰   *Exchanges*\n"
                      f"----------------------------------\n"
                      f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
-                     f" *Gate io COMING SOON* [https://gate.io/]\n"
+                     f" *Gate io COMING SOON* [https://www.gate.io/de/trade/KAS_USDT]\n"
                      f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                      f" *Txbit* [https://txbit.io/]\n"
+                     f" *Chainge* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
                      f" *Exibitron* [https://www.exbitron.com/]\n"
                      f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                      parse_mode="Markdown",
@@ -534,13 +537,13 @@ def links(e):
 
 
 @bot.message_handler(commands=["explorers"], func=check_debounce(60 * 10))
-def links(e):
+def explorers(e):
     bot.send_message(e.chat.id,
                      f"----------------------\n"
                      f" *Kaspa explorers*\n"
                      f"----------------------\n"
                      f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
-                     f"[Block Explorer](https://explorer.kaspa.org/)\n"
+                     f"[Kaspa Block Explorer](https://explorer.kaspa.org/)\n"
                      f"[KAS FYI](https://kas.fyi/)\n",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
