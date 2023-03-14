@@ -14,7 +14,6 @@ from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 
 import kaspa_api
-import poolo
 import tipping
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
@@ -168,6 +167,9 @@ def callback_query_hashrate_update(call):
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def donate(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
                      f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
@@ -176,6 +178,9 @@ def donate(e):
 
 @bot.message_handler(commands=["balance"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def balance(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         try:
             address = e.text.split(" ")[1]
@@ -199,6 +204,9 @@ def balance(e):
 
 @bot.message_handler(commands=["devfund"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def devfund(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         try:
             balance_mining = kaspa_api.get_balance(DEV_MINING_ADDR)["balance"] / 100000000
@@ -221,6 +229,9 @@ def devfund(e):
 
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 10))
 def coin_supply(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         coin_supply = kaspa_api.get_coin_supply()
 
@@ -245,6 +256,9 @@ def coin_supply(e):
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def price(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         if e.chat.id == -1001589070884:
             bot.send_message(e.chat.id,
@@ -319,6 +333,9 @@ def get_ath_message(name):
 
 @bot.message_handler(commands=["ath"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def ath(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         if e.chat.id == -1001589070884:
             bot.send_message(e.chat.id,
@@ -338,6 +355,9 @@ def ath(e):
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
 def wallet(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
                                     f'*Kaspad (command line wallet)*:\n'
@@ -356,6 +376,9 @@ def wallet(e):
 
 @bot.message_handler(commands=["mining_reward", "mr"], func=ignore_channels(["-1001589070884"]))
 def mining_reward(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         params = " ".join(e.text.split(" ")[1:])
         match = re.match(r"(?P<dec>[\d\.]+) *(?P<suffix>[^\d ]+)", params)
@@ -389,6 +412,9 @@ def id(e):
 
 @bot.message_handler(commands=["chart"])
 def chart(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
                                 f"    https://www.tradingview.com/chart/?symbol=MEXC%3AKASUSDT\n",
                      parse_mode="Markdown",
@@ -397,6 +423,9 @@ def chart(e):
 
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
 def mcap(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         kaspa_info = get_coin_info()
         price_usd = kaspa_info["market_data"]["current_price"]["usd"]
@@ -419,6 +448,9 @@ def mcap(e):
 
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
 def max_hashrate(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         max_hashrate = kaspa_api.get_max_hashrate()
 
@@ -439,6 +471,9 @@ def id(e):
 
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
 def hashrate(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         hashrate = kaspa_api.get_hashrate()["hashrate"]
         bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
@@ -450,6 +485,9 @@ def hashrate(e):
 
 @bot.message_handler(commands=["buy"], func=check_debounce(60 * 10))
 def buy(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"    💰   *Exchanges*\n"
                      f"----------------------------------\n"
@@ -466,6 +504,9 @@ def buy(e):
 
 @bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
 def buy(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"----------------------------------\n"
                      f" *Kaspa in your language*\n"
@@ -502,6 +543,9 @@ def buy(e):
 
 @bot.message_handler(commands=["miningpools"], func=check_debounce(60 * 10))
 def miningpools(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"----------------------\n"
                      f" *Kaspa mining pools*\n"
@@ -521,6 +565,9 @@ def miningpools(e):
 
 @bot.message_handler(commands=["links"], func=check_debounce(60 * 10))
 def links(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"----------------------\n"
                      f" *Most important links*\n"
@@ -538,6 +585,9 @@ def links(e):
 
 @bot.message_handler(commands=["explorers"], func=check_debounce(60 * 10))
 def explorers(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      f"----------------------\n"
                      f" *Kaspa explorers*\n"
@@ -553,6 +603,9 @@ def explorers(e):
 
 @bot.message_handler(commands=["withdraw"])
 def withdraw(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         # sender = e.from_user.username
         sender = f"{e.from_user.id}"
@@ -592,6 +645,9 @@ def withdraw(e):
 
 @bot.message_handler(commands=["telegram_wallet"])
 def tgwallet(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     bot.send_message(e.chat.id,
                      """<b>Welcome to Kaspa Telegram wallet!</b>
 I am the Kaspa Bot - here to help you to create a real wallet,
@@ -614,6 +670,9 @@ To use your wallet or get information, use the following commands:
 
 @bot.message_handler(commands=["tip"])
 def send_kas(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     recipient_username = ""
     sender_name = e.from_user.full_name or ""
     try:
@@ -648,7 +707,11 @@ def send_kas(e):
         return
 
     try:
-        recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
+        # kaspa bot? use donation address
+        if recipient == '5464545065':
+            recipient = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
+        else:
+            recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
     except Exception:
         msg = bot.send_message(e.chat.id,
                                f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
@@ -689,6 +752,9 @@ def send_kas(e):
 @bot.message_handler(commands=["create_wallet"])
 def create_wallet(e):
     if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
+    if e.chat.type != "private":
         msg = bot.send_message(e.chat.id, "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
@@ -722,6 +788,9 @@ def create_wallet(e):
 
 @bot.message_handler(commands=["kaspacity"])
 def kaspacity(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     with open("./res/kaspacity.jpg", "rb") as f:
         bot.send_photo(e.chat.id,
                        f,
@@ -742,6 +811,9 @@ Rob 🚀 lAmeR
 
 @bot.message_handler(commands=["wallet_info", "wi"])
 def check_wallet(e):
+    if e.chat.type != "private":
+        add_donation_channel(e.chat.id)
+
     try:
         user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
         username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json else f"{e.from_user.username}"
@@ -865,6 +937,12 @@ DONATION_CHANNELS = [-1001589070884,
                      -1001205240510]
 
 
+def add_donation_channel(chat_id):
+    global DONATION_CHANNELS
+    if chat_id not in DONATION_CHANNELS:
+        DONATION_CHANNELS.append(chat_id)
+
+
 def check_donations():
     donation_announced = 0
     while True:
@@ -879,15 +957,18 @@ def check_donations():
             if donation_balance != donation_announced:
                 if donation_announced:
                     for c_id in DONATION_CHANNELS:
-                        bot.send_message(c_id,
-                                         f"<b>Donation received for</b>\n"
-                                         f"* Telegram bot\n"
-                                         f"* REST-API\n"
-                                         f"* Blockexplorer\n"
-                                         f"* Telegram wallet feature\n\n"
-                                         f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
-                                         f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
-                                         parse_mode="html")
+                        try:
+                            bot.send_message(c_id,
+                                             f"<b>Donation received for</b>\n"
+                                             f"* Telegram bot\n"
+                                             f"* REST-API\n"
+                                             f"* Blockexplorer\n"
+                                             f"* Telegram wallet feature\n\n"
+                                             f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
+                                             f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
+                                             parse_mode="html")
+                        except Exception:
+                            pass
 
                 donation_announced = donation_balance
         except Exception:
@@ -1005,6 +1086,15 @@ def version(e):
     bot.send_message(e.chat.id,
                      f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
                      parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["channels"])
+def channels(e):
+    global DONATION_CHANNELS
+    if e.chat.id == 1922783296:
+        bot.send_message(e.chat.id,
+                         f"{DONATION_CHANNELS}",
+                         parse_mode="Markdown")
 
 
 if __name__ == '__main__':
