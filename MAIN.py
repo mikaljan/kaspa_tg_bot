@@ -1,4 +1,6 @@
 # encoding: utf-8
+import io
+import json
 import logging
 import math
 import os
@@ -8,7 +10,12 @@ import time
 from datetime import datetime
 
 import requests
+from PIL import Image
 from cachetools.func import ttl_cache
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.colormasks import RadialGradiantColorMask, SquareGradiantColorMask, HorizontalGradiantColorMask
+from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
+from qrcode.image.svg import SvgFragmentImage
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
@@ -20,6 +27,7 @@ from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINI
 from plot import get_image_stream
 from tipping import create_new_wallet, WalletCreationError, get_wallet, WalletNotFoundError, username_to_uuid, \
     get_wallet_pw, create_tx, WalletInsufficientBalanceError
+import qrcode
 
 logging.basicConfig(format="%(asctime)s::%(name)s::%(module)s::%(levelname)s::%(message)s",
                     level=logging.DEBUG)
@@ -36,6 +44,42 @@ DELETE_MESSAGES_CACHE = []
 bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
 
 assert os.environ.get('DONATION_ADDRESS') is not None
+
+
+def create_qr_code_img(text):
+    # taking image which user wants
+    # in the QR code center
+    logo = Image.open("./res/kaspa-icon.png")
+
+    # taking base width
+    basewidth = 100
+
+    # adjust image size
+    wpercent = (basewidth / float(logo.size[0]))
+    hsize = int((float(logo.size[1]) * float(wpercent)))
+    logo = logo.resize((basewidth, hsize), Image.ANTIALIAS)
+    QRcode = qrcode.QRCode(
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        border=7
+    )
+
+
+    # adding URL or text to QRcode
+    QRcode.add_data(text)
+
+    # generating QR code
+    QRcode.make()
+    # adding color to QR code
+    QRimg = QRcode.make_image(image_factory=StyledPilImage,
+                              module_drawer=RoundedModuleDrawer(),
+                              color_mask=HorizontalGradiantColorMask(right_color=(3, 38, 33),
+                                                                     left_color=(12, 110, 96))).convert('RGB')
+    # set size of QR code
+    pos = ((QRimg.size[0] - logo.size[0]) // 2,
+           (QRimg.size[1] - logo.size[1]) // 2)
+    QRimg.paste(logo, pos)
+    # save the QR code generated
+    return QRimg
 
 
 def check_debounce(seconds=60 * 60):
@@ -101,6 +145,24 @@ def ignore_channels(ignore_ids):
         return True  # True, if timedelta > seconds
 
     return wrapper
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('cb_remove_message;'))
+def callback_remove_message(call):
+    _, request_msg_id, requester_id = call.data.split(";")
+
+    requester_status = bot.get_chat_member(call.message.chat.id, call.from_user.id).status
+
+    if call.from_user.id == requester_id or \
+        call.from_user.id == 1922783296 or \
+            requester_status in ['administrator', 'creator'] or \
+            re.search(fr"^{call.from_user.full_name}:|@{call.from_user.username} telegram wallet is:",
+                      call.message.caption):
+        bot.delete_message(call.message.chat.id,
+                           call.message.id)
+
+        bot.delete_message(call.message.chat.id,
+                           request_msg_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
@@ -823,7 +885,10 @@ def check_wallet(e):
                             )
 
         show_button = InlineKeyboardMarkup([[InlineKeyboardButton("Show in explorer",
-                                                                  url=f"https://explorer.kaspa.org/addresses/{wallet['publicAddress']}")]])
+                                                                  url=f"https://explorer.kaspa.org/addresses/{wallet['publicAddress']}")],
+                                            [InlineKeyboardButton("Remove message",
+                                                                  callback_data=f"cb_remove_message;{e.message_id};{e.from_user.id}")]
+                                            ])
 
         wallet_balance = kaspa_api.get_balance(wallet["publicAddress"])["balance"] / 100000000
 
@@ -833,13 +898,12 @@ def check_wallet(e):
             wallet_balance = wallet_balance.rstrip("0")
             wallet_balance = wallet_balance.rstrip(".")
 
-        msg = bot.send_message(e.chat.id,
-                               f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
-                               parse_mode="html",
-                               reply_markup=show_button)
+        img_bytes = create_qr_code_img(wallet["publicAddress"])
 
-        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
-        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
+        msg = bot.send_photo(e.chat.id, photo=img_bytes,
+                             caption=f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
+                             parse_mode="html",
+                             reply_markup=show_button)
 
     except WalletNotFoundError:
         msg = bot.send_message(e.chat.id,
