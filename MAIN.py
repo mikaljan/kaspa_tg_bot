@@ -1,6 +1,4 @@
 # encoding: utf-8
-import io
-import json
 import logging
 import math
 import os
@@ -9,13 +7,13 @@ import threading
 import time
 from datetime import datetime
 
+import qrcode
 import requests
 from PIL import Image
 from cachetools.func import ttl_cache
 from qrcode.image.styledpil import StyledPilImage
-from qrcode.image.styles.colormasks import RadialGradiantColorMask, SquareGradiantColorMask, HorizontalGradiantColorMask
+from qrcode.image.styles.colormasks import HorizontalGradiantColorMask
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
-from qrcode.image.svg import SvgFragmentImage
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
@@ -27,7 +25,6 @@ from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINI
 from plot import get_image_stream
 from tipping import create_new_wallet, WalletCreationError, get_wallet, WalletNotFoundError, username_to_uuid, \
     get_wallet_pw, create_tx, WalletInsufficientBalanceError
-import qrcode
 
 logging.basicConfig(format="%(asctime)s::%(name)s::%(module)s::%(levelname)s::%(message)s",
                     level=logging.DEBUG)
@@ -62,7 +59,6 @@ def create_qr_code_img(text):
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         border=7
     )
-
 
     # adding URL or text to QRcode
     QRcode.add_data(text)
@@ -154,9 +150,9 @@ def callback_remove_message(call):
     requester_status = bot.get_chat_member(call.message.chat.id, call.from_user.id).status
 
     if call.from_user.id == requester_id or \
-        call.from_user.id == 1922783296 or \
+            call.from_user.id == 1922783296 or \
             requester_status in ['administrator', 'creator'] or \
-            re.search(fr"^{call.from_user.full_name}:|@{call.from_user.username} telegram wallet is:",
+            re.search(fr"@{call.from_user.username} telegram wallet is:",
                       call.message.caption):
         bot.delete_message(call.message.chat.id,
                            call.message.id)
@@ -909,8 +905,8 @@ def check_wallet(e):
         msg = bot.send_message(e.chat.id,
                                f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
                                parse_mode="html")
-        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
-        DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, msg.id))
+        DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, e.message_id))
 
 
 def progress_bar(perc):
@@ -997,8 +993,9 @@ def _get_kas_price():
         logging.exception(str(e))
 
 
-DONATION_CHANNELS = [-1001589070884,
-                     -1001205240510]
+DONATION_CHANNELS = [-1001589070884, -1001205240510, -1001778657727, -1001208691907, -1001695274086, -1001831752155,
+                     -1001707714192, -1001629453639, -1001593411704, -1001493667078, -1001602068748, -1001663502725,
+                     -1001539492361, -1001670476757, -1001804214136, -1001877039289, -1001688255696]
 
 
 def add_donation_channel(chat_id):
