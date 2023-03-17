@@ -997,6 +997,8 @@ DONATION_CHANNELS = [-1001589070884, -1001205240510, -1001778657727, -1001208691
                      -1001707714192, -1001629453639, -1001593411704, -1001493667078, -1001602068748, -1001663502725,
                      -1001539492361, -1001670476757, -1001804214136, -1001877039289, -1001688255696]
 
+IGNORE_CHANNELS = [-1001516174742]
+
 
 def add_donation_channel(chat_id):
     global DONATION_CHANNELS
@@ -1018,16 +1020,20 @@ def check_donations():
             if donation_balance != donation_announced:
                 if donation_announced:
                     for c_id in DONATION_CHANNELS:
+                        if c_id in IGNORE_CHANNELS:
+                            continue
+
                         try:
-                            bot.send_message(c_id,
-                                             f"<b>Donation received for</b>\n"
-                                             f"* Telegram bot\n"
-                                             f"* REST-API\n"
-                                             f"* Blockexplorer\n"
-                                             f"* Telegram wallet feature\n\n"
-                                             f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
-                                             f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
-                                             parse_mode="html")
+                            if (donation_balance - donation_announced) >= 1000:
+                                bot.send_message(c_id,
+                                                 f"<b>Donation received for</b>\n"
+                                                 f"* Telegram bot\n"
+                                                 f"* REST-API\n"
+                                                 f"* Blockexplorer\n"
+                                                 f"* Telegram wallet feature\n\n"
+                                                 f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
+                                                 f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
+                                                 parse_mode="html")
                         except Exception:
                             pass
 
