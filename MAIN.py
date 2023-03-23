@@ -541,7 +541,7 @@ def hashrate(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["buy"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["buy", "exchanges"], func=check_debounce(60 * 10))
 def buy(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
@@ -550,7 +550,7 @@ def buy(e):
                      f"    💰   *Exchanges*\n"
                      f"----------------------------------\n"
                      f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
-                     f" *Gate io COMING SOON* [https://www.gate.io/de/trade/KAS_USDT]\n"
+                     f" *Gate io* [https://www.gate.io/de/trade/KAS_USDT]\n"
                      f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                      f" *Txbit* [https://txbit.io/]\n"
                      f" *Chainge* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
