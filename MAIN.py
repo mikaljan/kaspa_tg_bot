@@ -616,7 +616,8 @@ def miningpools(e):
                      f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
                      f"[P1 POOL](https://p1pool.com/)\n"
                      f"[KRYPTEX](https://pool.kryptex.com/en/kas)\n"
-                     f"[HASHPOOL](https://hashpool.com/coins/KAS)",
+                     f"[HASHPOOL](https://hashpool.com/coins/KAS)\n\n"
+                     f"[More](https://miningpoolstats.stream/kaspa)",
                      parse_mode="Markdown",
                      disable_web_page_preview=True)
 
