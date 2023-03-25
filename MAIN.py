@@ -689,7 +689,7 @@ def withdraw(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
-    if not (amount := re.search(" (\d+([.,]\d+)?)[ $]?(KAS)?", e.text, re.IGNORECASE)):
+    if not (amount := re.search(" (\d+([.,]\d+)?)[ $](KAS)?", e.text, re.IGNORECASE)):
         bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
         return
     else:
