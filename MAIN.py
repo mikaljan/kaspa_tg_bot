@@ -417,16 +417,21 @@ def wallet(e):
         add_donation_channel(e.chat.id)
 
     try:
-        bot.send_message(e.chat.id, f'*For a Kaspa-wallet you can use one of these applications*\n\n'
-                                    f'*Kaspad (command line wallet)*:\n'
-                                    f'  tinyurl.com/ym8sbas7\n'
-                                    '*Kaspa for desktop (KDX)*:\n'
-                                    '  https://kdx.app/\n'
-                                    '*Web wallet*:\n'
+        bot.send_message(e.chat.id, f'<b>For a Kaspa-wallet you can use one of these applications</b>\n\n'
+                                    '<b>Web wallet</b>:\n'
                                     '  https://wallet.kaspanet.io/\n'
-                                    '*Chainge*:\n'
-                                    '  https://www.chainge.finance/',
-                         parse_mode="Markdown",
+                                    f'<b>Kaspad (command line wallet)</b>:\n'
+                                    f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
+                                    '<b>Kaspa for desktop (KDX)</b>:\n'
+                                    '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
+                                    '<b>Chainge</b>:\n'
+                                    '  https://www.chainge.finance/\n'
+                                    '<b>Tangem COMING SOON</b>:\n'
+                                    '  https://tangem.com/\n'
+                                    '<b>Telegram wallet</b>:\n'
+                                    '  Talk to @kaspanet_bot with <code>/create_wallet</code> command\n'
+                                    '  This wallet is just for fun / demonstration.',
+                         parse_mode="html",
                          disable_web_page_preview=True)
     except Exception as e:
         print(str(e))
@@ -708,21 +713,13 @@ def tgwallet(e):
         add_donation_channel(e.chat.id)
 
     bot.send_message(e.chat.id,
-                     """<b>Welcome to Kaspa Telegram wallet!</b>
-I am the Kaspa Bot - here to help you to create a real wallet,
-which you can use with your telegram account!
-<b>To create a wallet DM @kaspanet_bot with the command <code>/create_wallet</code>.</b>
+                     """<b>To create a wallet DM @kaspanet_bot with the command <code>/create_wallet</code>.</b>
 
-You will get your 12-word-seeds and your public address, which is static forever.
-To use your wallet or get information, use the following commands:
+Then you can use:
 <b>  /wallet_info</b> - Shows either your or the replied user's wallet information.
 <b>  /tip 1.23 KAS</b> - reply to someone's message and send him/her a tip.
 <b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
-""" +
-                     "\nPlease be advised that neither the dev nor any of the kaspa community is"
-                     "responsible for any issues or losses that may occur with the use of this wallet."
-                     "\nUse at your own risk."
-
+"""
                      "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
                      parse_mode="html")
 
@@ -825,14 +822,19 @@ def create_wallet(e):
         wallet = create_new_wallet(get_wallet_pw(f"{user_id}"),
                                    username_to_uuid(f"{user_id}"))
         seed = wallet["mnemonic"]
-        bot.send_message(e.chat.id, f"Wallet creation successful. Your kaspa address is:"
-                                    f"\n`{wallet['publicAddress']}`"
+        bot.send_message(e.chat.id, f"<b>Welcome to Kaspa Telegram wallet!</b>\n"
+                                    f"Wallet creation was successful. Your kaspa address is:"
+                                    f"\n<code>{wallet['publicAddress']}</code>"
                                     f"\n\nYour seed phrase is:\n"
-                                    f"`{seed}`"
+                                    f"<code>{seed}</code>\n\n"
+                                    f"To use your wallet or get information, use the following commands:\n"
+                                    "  /wallet_info - Shows either your or the replied user's wallet information.\n"
+                                    "  /tip 1.23 KAS - reply to someone's message and send him/her a tip.\n"
+                                    "  /withdraw kaspa:... 1.23 KAS - Withdraw KAS from your Telegram wallet to another address"
                                     f"\n\nPlease be advised that neither the dev nor any of the kaspa community is"
                                     f" responsible for any issues or losses that may occur with the use of this wallet."
                                     f" Use at your own risk.",
-                         parse_mode="Markdown")
+                         parse_mode="html")
 
         try:
             send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
