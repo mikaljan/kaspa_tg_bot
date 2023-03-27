@@ -4,6 +4,7 @@
 from urllib.parse import urljoin
 
 import requests
+from cachetools.func import ttl_cache
 
 _session = requests.session()
 
@@ -20,7 +21,7 @@ def __get(endpoint, params=None):
 def get_coin_supply():
     return __get("info/coinsupply")
 
-
+@ttl_cache(ttl=15)
 def get_hashrate():
     return __get("info/hashrate")
 
@@ -28,6 +29,7 @@ def get_hashrate():
 def get_balance(addr):
     return __get(f"addresses/{addr}/balance")
 
+@ttl_cache(120)
 def get_max_hashrate():
     return __get(f"info/hashrate/max")
 

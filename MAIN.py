@@ -16,6 +16,7 @@ from qrcode.image.styles.colormasks import HorizontalGradiantColorMask
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
+from telebot.async_telebot import AsyncTeleBot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 
 import kaspa_api
@@ -38,7 +39,7 @@ DEBOUNCE_CACHE = {}
 TX_CHECKER = {}
 DELETE_MESSAGES_CACHE = []
 
-bot = TeleBot(os.environ["TELEBOT_TOKEN"], threaded=True)
+bot = AsyncTeleBot(os.environ["TELEBOT_TOKEN"])
 
 assert os.environ.get('DONATION_ADDRESS') is not None
 
@@ -77,6 +78,14 @@ def create_qr_code_img(text):
     # save the QR code generated
     return QRimg
 
+def chef_only(*args, **kwargs):
+    try:
+        return args[0].from_user.id == 1922783296
+    except Exception:
+        return False
+
+
+
 
 def check_debounce(seconds=60 * 60):
     def wrapper(*args, **kwargs):
@@ -92,7 +101,7 @@ def check_debounce(seconds=60 * 60):
             DEBOUNCE_CACHE[cmd_id] = time.time()
         else:
             try:
-                bot.delete_message(args[0].chat.id, args[0].id)
+                asyncio.gather(bot.delete_message(args[0].chat.id, args[0].id))
             except ApiTelegramException as e:
                 if "message can't be deleted for everyone" not in str(e):
                     raise
@@ -109,7 +118,7 @@ def check_param(*args):
     is_param = len(args[0].text.split(" ")) > 1
     if not is_param:
         try:
-            bot.delete_message(args[0].chat.id, args[0].id)
+            asyncio.gather(bot.delete_message(args[0].chat.id, args[0].id))
         except ApiTelegramException as e:
             if "message can't be deleted for everyone" not in str(e):
                 raise
@@ -120,7 +129,7 @@ def check_param(*args):
 def check_only_private(*args):
     if args[0].chat.type in ["group", "supergroup"]:
         try:
-            bot.delete_message(args[0].chat.id, args[0].id)
+            asyncio.gather(bot.delete_message(args[0].chat.id, args[0].id))
         except ApiTelegramException as e:
             if "message can't be deleted for everyone" not in str(e):
                 print(e)
@@ -128,11 +137,11 @@ def check_only_private(*args):
         return True
 
 
-def ignore_channels(ignore_ids):
-    def wrapper(*args, **kwargs):
+async def ignore_channels(ignore_ids):
+    async def wrapper(*args, **kwargs):
         if str(args[0].chat.id) in ignore_ids:
             try:
-                bot.delete_message(args[0].chat.id, args[0].id)
+                await bot.delete_message(args[0].chat.id, args[0].id)
                 return False
             except ApiTelegramException as e:
                 if "message can't be deleted for everyone" not in str(e):
@@ -144,25 +153,25 @@ def ignore_channels(ignore_ids):
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('cb_remove_message;'))
-def callback_remove_message(call):
+async def callback_remove_message(call):
     _, request_msg_id, requester_id = call.data.split(";")
 
-    requester_status = bot.get_chat_member(call.message.chat.id, call.from_user.id).status
+    requester_status = await bot.get_chat_member(call.message.chat.id, call.from_user.id).status
 
     if call.from_user.id == requester_id or \
             call.from_user.id == 1922783296 or \
             requester_status in ['administrator', 'creator'] or \
             re.search(fr"@{call.from_user.username} telegram wallet is:",
                       call.message.caption):
-        bot.delete_message(call.message.chat.id,
-                           call.message.id)
+        await bot.delete_message(call.message.chat.id,
+                                 call.message.id)
 
-        bot.delete_message(call.message.chat.id,
-                           request_msg_id)
+        await bot.delete_message(call.message.chat.id,
+                                 request_msg_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update')
-def callback_query_price_update(call):
+async def callback_query_price_update(call):
     try:
         try:
             days = int(re.search("for (\d+)d", call.message.caption)[1])
@@ -172,34 +181,35 @@ def callback_query_price_update(call):
         try:
             message = get_price_message(days)
         except Exception:
+            await bot.send_message(all.message.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             logging.exception('Exception at price update')
             return
 
         if re.findall("\d", message) == re.findall("\d", call.message.caption):
-            bot.answer_callback_query(call.id, "Price chart is up to date.", False, cache_time=10)
+            await bot.answer_callback_query(call.id, "Price chart is up to date.", False, cache_time=10)
             return
 
         try:
-            bot.edit_message_media(InputMedia(type='photo',
-                                              media=get_image_stream(days),
-                                              caption=message,
-                                              parse_mode="markdown"),
-                                   call.message.chat.id,
-                                   call.message.id,
-                                   reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                            callback_data="cb_update")]]))
+            await bot.edit_message_media(InputMedia(type='photo',
+                                                    media=get_image_stream(days),
+                                                    caption=message,
+                                                    parse_mode="markdown"),
+                                         call.message.chat.id,
+                                         call.message.id,
+                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                  callback_data="cb_update")]]))
 
         except ApiTelegramException as e:
             if "message is not modified" not in str(e):
                 raise
 
-        bot.answer_callback_query(call.id)
+        await bot.answer_callback_query(call.id)
     except Exception as e:
         print(str(e))
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'cb_update_hashrate')
-def callback_query_hashrate_update(call):
+async def callback_query_hashrate_update(call):
     try:
         try:
             hashrate = kaspa_api.get_hashrate()["hashrate"]
@@ -208,15 +218,19 @@ def callback_query_hashrate_update(call):
             return
 
         try:
-            bot.edit_message_text(f"Current Hashrate: *{hashrate:0.2f} TH/s*", call.message.chat.id, call.message.id,
-                                  parse_mode="Markdown",
-                                  reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                           callback_data="cb_update_hashrate")]]))
+            if f"{hashrate:0.2f}" not in call.message.text:
+                await bot.edit_message_text(f"Current Hashrate: *{hashrate:0.2f} TH/s*", call.message.chat.id,
+                                            call.message.id,
+                                            parse_mode="Markdown",
+                                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                     callback_data="cb_update_hashrate")]]))
+            else:
+                await bot.answer_callback_query(call.id)
         except ApiTelegramException as e:
             if "message is not modified" not in str(e):
                 raise
 
-        bot.answer_callback_query(call.id)
+        await bot.answer_callback_query(call.id)
     except TimeoutError:
         logging.exception('Exception at hashrate update')
     except Exception:
@@ -224,18 +238,27 @@ def callback_query_hashrate_update(call):
 
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def donate(e):
+async def donate(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
-                     f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
-                     parse_mode="Markdown")
+    await bot.send_message(e.chat.id,
+                           f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
+                           f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
+                           parse_mode="Markdown")\
+
+@bot.message_handler(commands=["announce"], func=chef_only)
+async def announce(e):
+    if text := e.text[10:]:
+        for c_id in DONATION_CHANNELS:
+            await bot.send_message(c_id,
+                                   f"🚨 *Bot Announcement* 🚨\n"
+                                   f"{text}",
+                                   parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["balance"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def balance(e):
+async def balance(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -243,25 +266,25 @@ def balance(e):
         try:
             address = e.text.split(" ")[1]
         except IndexError:
-            bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
+            await bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
             return
 
         if re.match(r"kaspa:[a-zA-Z0-9]{51}", address) is None:
-            bot.send_message(e.chat.id, "kaspa wallet not valid.")
+            await bot.send_message(e.chat.id, "kaspa wallet not valid.")
             return
 
         balance = kaspa_api.get_balance(address)["balance"] / 100000000
 
-        bot.send_message(e.chat.id, f"\nBalance for\n"
-                                    f"  {address}\n"
-                                    f"{10 * '-'}\n"
-                                    f"{balance:,} KAS", parse_mode="Markdown")
+        await bot.send_message(e.chat.id, f"\nBalance for\n"
+                                          f"  {address}\n"
+                                          f"{10 * '-'}\n"
+                                          f"{balance:,} KAS", parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["devfund"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def devfund(e):
+async def devfund(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -273,20 +296,20 @@ def devfund(e):
             print(f'Exception raised: {e}')
             return
 
-        bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
-                                    f"```\nMINING\n"
-                                    f"    {round(balance_mining, 2):,} KAS\n"
-                                    f"DONATION\n"
-                                    f"    {round(balance_donation, 2):,} KAS\n"
-                                    f"{30 * '-'}\n"
-                                    f"{round(balance_mining, 2) + round(balance_donation, 2):,} KAS\n```",
-                         parse_mode="Markdown")
+        await bot.send_message(e.chat.id, f"*Balance for devfund*\n\n"
+                                          f"```\nMINING\n"
+                                          f"    {round(balance_mining, 2):,} KAS\n"
+                                          f"DONATION\n"
+                                          f"    {round(balance_donation, 2):,} KAS\n"
+                                          f"{30 * '-'}\n"
+                                          f"{round(balance_mining, 2) + round(balance_donation, 2):,} KAS\n```",
+                               parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["coin_supply"], func=check_debounce(60 * 10))
-def coin_supply(e):
+async def coin_supply(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -299,41 +322,45 @@ def coin_supply(e):
         circulating_supply = float(coin_supply["circulatingSupply"]) / 100000000
         total_supply = float(TOTAL_COIN_SUPPLY)
 
-        bot.send_message(e.chat.id,
-                         f"```"
-                         f"\n"
-                         f"Total supply  : {circulating_supply:,.0f} KAS\n"
-                         f"Unmined supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
-                         f"{'=' * 15}\n"
-                         f"Max supply ~      : {total_supply:,.0f} KAS\n"
-                         f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
-                         f"```", parse_mode="Markdown")
+        await bot.send_message(e.chat.id,
+                               f"```"
+                               f"\n"
+                               f"Total supply  : {circulating_supply:,.0f} KAS\n"
+                               f"Unmined supply : {total_supply - circulating_supply:,.0f} KAS\n\n"
+                               f"{'=' * 15}\n"
+                               f"Max supply ~      : {total_supply:,.0f} KAS\n"
+                               f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
+                               f"```", parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def price(e):
+async def price(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     try:
         if e.chat.id == -1001589070884:
-            bot.send_message(e.chat.id,
-                             f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+            await bot.send_message(e.chat.id,
+                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
                 try:
                     days = int(re.search(r"(\d+)d", e.text)[1])
                 except Exception:
                     days = 1
-                msg = get_price_message(days)
-                bot.send_photo(e.chat.id,
-                               get_image_stream(days),
-                               caption=msg,
-                               parse_mode="Markdown",
-                               reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                        callback_data="cb_update")]]))
+
+                try:
+                    msg = get_price_message(days)
+                    await bot.send_photo(e.chat.id,
+                                         get_image_stream(days),
+                                         caption=msg,
+                                         parse_mode="Markdown",
+                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                  callback_data="cb_update")]]))
+                except requests.ReadTimeout:
+                    await bot.send_message(e.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             except Exception:
                 logging.exception(f'Raised exception')
     except Exception as e:
@@ -342,15 +369,14 @@ def price(e):
 
 @ttl_cache(ttl=60)
 def get_coin_info():
-    try:
-        resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
-                            params={"tickers": False,
-                                    "community_data": False,
-                                    "developer_data": False})
+    resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
+                        params={"tickers": False,
+                                "community_data": False,
+                                "developer_data": False},
+                        timeout=10)
 
-        return resp.json()
-    except Exception as e:
-        print(str(e))
+    return resp.json()
+
 
 
 def get_ath_message(name):
@@ -376,9 +402,9 @@ def get_ath_message(name):
 
         message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
                   f"{'-' * 40}\n" \
-                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'], 6):0.6f} USD\n\n" \
+                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'], 6):0.5f} USD\n\n" \
                   f" *ATH Price:*\n" \
-                  f"      {ath_price:0.4f} USD\n" \
+                  f"      {ath_price:0.5f} USD\n" \
                   f" *ATH Date* :\n" \
                   f"      {ath_date:%Y-%m-%d %H:%M}\n" \
                   f" *ATH Change ▼*:\n" \
@@ -390,55 +416,54 @@ def get_ath_message(name):
 
 
 @bot.message_handler(commands=["ath"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def ath(e):
+async def ath(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     try:
         if e.chat.id == -1001589070884:
-            bot.send_message(e.chat.id,
-                             f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+            await bot.send_message(e.chat.id,
+                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
                 message = get_ath_message("kas")
             except Exception as e:
-                print(f"Error creating ATH message: {e}")
                 return
             if message:
-                bot.send_message(e.chat.id, message,
-                                 parse_mode="Markdown")
+                await bot.send_message(e.chat.id, message,
+                                       parse_mode="Markdown")
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["wallet"], func=check_debounce(DEBOUNCE_SECS_PRICE))
-def wallet(e):
+async def wallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     try:
-        bot.send_message(e.chat.id, f'<b>For a Kaspa-wallet you can use one of these applications</b>\n\n'
-                                    '<b>Web wallet</b>:\n'
-                                    '  https://wallet.kaspanet.io/\n'
-                                    f'<b>Kaspad (command line wallet)</b>:\n'
-                                    f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
-                                    '<b>Kaspa for desktop (KDX)</b>:\n'
-                                    '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
-                                    '<b>Chainge</b>:\n'
-                                    '  https://www.chainge.finance/\n'
-                                    '<b>Tangem COMING SOON</b>:\n'
-                                    '  https://tangem.com/\n'
-                                    '<b>Telegram wallet</b>:\n'
-                                    '  Talk to @kaspanet_bot with <code>/create_wallet</code> command\n'
-                                    '  This wallet is just for fun / demonstration.',
-                         parse_mode="html",
-                         disable_web_page_preview=True)
+        await bot.send_message(e.chat.id, f'<b>For a Kaspa-wallet you can use one of these applications</b>\n\n'
+                                          '<b>Web wallet</b>:\n'
+                                          '  https://wallet.kaspanet.io/\n'
+                                          f'<b>Kaspad (command line wallet)</b>:\n'
+                                          f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
+                                          '<b>Kaspa for desktop (KDX)</b>:\n'
+                                          '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
+                                          '<b>Chainge</b>:\n'
+                                          '  https://www.chainge.finance/\n'
+                                          '<b>Tangem COMING SOON</b>:\n'
+                                          '  https://tangem.com/\n'
+                                          '<b>Telegram wallet</b>:\n'
+                                          '  Talk to @kaspanet_bot with <code>/create_wallet</code> command\n'
+                                          '  This wallet is just for fun / demonstration.',
+                               parse_mode="html",
+                               disable_web_page_preview=True)
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["mining_reward", "mr"], func=ignore_channels(["-1001589070884"]))
-def mining_reward(e):
+async def mining_reward(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -461,31 +486,32 @@ def mining_reward(e):
         if own_hashrate:
             hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
             rewards = get_mining_rewards(int(stats['virtualDaaScore']), hash_percent_of_network)
-            bot.send_message(e.chat.id,
-                             f"*Mining rewards for {match['dec']} {suffix[:2].upper()}/s*\n" + MINING_CALC(rewards),
-                             parse_mode="Markdown")
+            await bot.send_message(e.chat.id,
+                                   f"*Mining rewards for {match['dec']} {suffix[:2].upper()}/s*\n" + MINING_CALC(
+                                       rewards),
+                                   parse_mode="Markdown")
     except Exception:
         logging.exception('Exception at /mr')
 
 
 @bot.message_handler(commands=["id"])
-def id(e):
-    bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
+async def id(e):
+    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
 
 
 @bot.message_handler(commands=["chart"])
-def chart(e):
+async def chart(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
-                                f"    https://www.tradingview.com/chart/?symbol=MEXC%3AKASUSDT\n",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
+                                      f"    https://www.tradingview.com/chart/?symbol=MEXC%3AKASUSDT\n",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["mcap"], func=check_debounce(60 * 60))
-def mcap(e):
+async def mcap(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -496,177 +522,178 @@ def mcap(e):
 
         circ_supply = float(kaspa_api.get_coin_supply()["circulatingSupply"]) / 100000000
 
-        bot.send_message(e.chat.id,
-                         f"*$KAS MARKET CAP*\n"
-                         f"{'-' * 25}\n"
-                         f"```\n"
-                         f"Coingecko Market cap rank : {rank}\n"
-                         f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
-                         f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
-                         f"\n```",
-                         parse_mode="Markdown")
+        await bot.send_message(e.chat.id,
+                               f"*$KAS MARKET CAP*\n"
+                               f"{'-' * 25}\n"
+                               f"```\n"
+                               f"Coingecko Market cap rank : {rank}\n"
+                               f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
+                               f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
+                               f"\n```",
+                               parse_mode="Markdown")
     except Exception:
         logging.exception(f'Raised exception in mcap')
 
 
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
-def max_hashrate(e):
+async def max_hashrate(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     try:
         max_hashrate = kaspa_api.get_max_hashrate()
 
-        bot.send_message(e.chat.id,
-                         f"Max Kaspa Hashrate\n"
-                         f"  *{max_hashrate['hashrate']:.2f} THs*\n\n"
-                         f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
-                         f"  Block {max_hashrate['blockheader']['hash'][:8]}",
-                         parse_mode="Markdown")
+        await bot.send_message(e.chat.id,
+                               f"Max Kaspa Hashrate\n"
+                               f"  *{max_hashrate['hashrate']:.2f} THs*\n\n"
+                               f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
+                               f"  Block {max_hashrate['blockheader']['hash'][:8]}",
+                               parse_mode="Markdown")
     except Exception:
         logging.exception(f'Raised exception in maxhash')
 
 
 @bot.message_handler(commands=["id"], func=check_only_private)
-def id(e):
-    bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
+async def id(e):
+    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
 
 
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
-def hashrate(e):
+async def hashrate(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     try:
         hashrate = kaspa_api.get_hashrate()["hashrate"]
-        bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
-                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                  callback_data="cb_update_hashrate")]]))
+        await bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
+                               reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                        callback_data="cb_update_hashrate")]]))
     except Exception as e:
         print(str(e))
 
 
 @bot.message_handler(commands=["buy", "exchanges"], func=check_debounce(60 * 10))
-def buy(e):
+async def buy(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"    💰   *Exchanges*\n"
-                     f"----------------------------------\n"
-                     f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
-                     f" *Gate io* [https://www.gate.io/de/trade/KAS_USDT]\n"
-                     f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
-                     f" *Txbit* [https://txbit.io/]\n"
-                     f" *Chainge* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
-                     f" *Exibitron* [https://www.exbitron.com/]\n"
-                     f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id,
+                           f"    💰   *Exchanges*   💰\n"
+                           f"----------------------------------\n"
+                           f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
+                           f" *Gate* [https://www.gate.io/de/trade/KAS_USDT]\n"
+                           f" *Hotbit* [https://www.hotbit.io/](https://www.hotbit.io/exchange?symbol=KAS_USDT)\n"
+                           f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
+                           f" *Txbit* [https://txbit.io/]\n"
+                           f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
+                           f" *Exibitron* [https://www.exbitron.com/]\n"
+                           f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
-def buy(e):
+async def buy(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"----------------------------------\n"
-                     f" *Kaspa in your language*\n"
-                     f" ⚠️Please keep in mind:\n"
-                     f"These are *unofficial* groups.\n"
-                     f"Use with caution! ⚠️ \n"
-                     f"----------------------------------\n"
-                     f"🇦🇪 [https://t.me/kaspa_arabic](https://t.me/kaspa_arabic)\n"
-                     f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
-                     f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
-                     f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
-                     f"🇫🇮 [https://t.me/kaspa_finland](https://t.me/kaspa_finland)\n"
-                     f"🇫🇷 [https://t.me/kasfrench](https://t.me/kasfrench)\n"
-                     f"🇮🇳 [https://t.me/kaspaindia](https://t.me/kaspaindia)\n"
-                     f"🇮🇩 [https://t.me/Kaspa_Indonesian](https://t.me/Kaspa_Indonesian)\n"
-                     f"🇮🇱 [https://t.me/kaspaisrael](https://t.me/kaspaisrael)\n"
-                     f"🇮🇹 [https://t.me/kaspaitalia](https://t.me/kaspaitalia)\n"
-                     f"🇯🇵 [https://t.me/Kaspa_Japan](https://t.me/Kaspa_Japan)\n"
-                     f"🇰🇷 [https://t.me/kaspa_korea](https://t.me/kaspa_korea)\n"
-                     f"🇮🇷 [https://t.me/Kaspa_persian](https://t.me/Kaspa_persian)\n"
-                     f"🇵🇭 [http://t.me/kaspa_ph](http://t.me/kaspa_ph)\n"
-                     f"🇵🇱 [https://t.me/Kaspa_Poland](https://t.me/Kaspa_Poland)\n"
-                     f"🇵🇹🇧🇷 [https://t.me/kaspa_portugues](https://t.me/kaspa_portugues)\n"
-                     f"🇳🇱 [https://t.me/Kaspa_Dutch](https://t.me/Kaspa_Dutch)\n"
-                     f"🇷🇴 [https://t.me/kaspa_ro](https://t.me/kaspa_ro)\n"
-                     f"🇷🇺 [https://t.me/kaspa_rus](https://t.me/kaspa_rus)\n"
-                     f"🇹🇷 [https://t.me/KaspaTurk](https://t.me/KaspaTurk)\n"
-                     f"🇹🇷 NEW [https://t.me/KaspaTr](https://t.me/KaspaTr)\n"
-                     f"🇻🇳 [https://t.me/Kaspa_VN](https://t.me/Kaspa_VN)\n"
-                     f"🇷🇸 [https://t.me/kaspa_balkan](https://t.me/kaspa_balkan)",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id,
+                           f"----------------------------------\n"
+                           f" *Kaspa in your language*\n"
+                           f" ⚠️Please keep in mind:\n"
+                           f"These are *unofficial* groups.\n"
+                           f"Use with caution! ⚠️ \n"
+                           f"----------------------------------\n"
+                           f"🇦🇪 [https://t.me/kaspa_arabic](https://t.me/kaspa_arabic)\n"
+                           f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
+                           f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
+                           f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
+                           f"🇫🇮 [https://t.me/kaspa_finland](https://t.me/kaspa_finland)\n"
+                           f"🇫🇷 [https://t.me/kasfrench](https://t.me/kasfrench)\n"
+                           f"🇮🇳 [https://t.me/kaspaindia](https://t.me/kaspaindia)\n"
+                           f"🇮🇩 [https://t.me/Kaspa_Indonesian](https://t.me/Kaspa_Indonesian)\n"
+                           f"🇮🇱 [https://t.me/kaspaisrael](https://t.me/kaspaisrael)\n"
+                           f"🇮🇹 [https://t.me/kaspaitalia](https://t.me/kaspaitalia)\n"
+                           f"🇯🇵 [https://t.me/Kaspa_Japan](https://t.me/Kaspa_Japan)\n"
+                           f"🇰🇷 [https://t.me/kaspa_korea](https://t.me/kaspa_korea)\n"
+                           f"🇮🇷 [https://t.me/Kaspa_persian](https://t.me/Kaspa_persian)\n"
+                           f"🇵🇭 [http://t.me/kaspa_ph](http://t.me/kaspa_ph)\n"
+                           f"🇵🇱 [https://t.me/Kaspa_Poland](https://t.me/Kaspa_Poland)\n"
+                           f"🇵🇹🇧🇷 [https://t.me/kaspa_portugues](https://t.me/kaspa_portugues)\n"
+                           f"🇳🇱 [https://t.me/Kaspa_Dutch](https://t.me/Kaspa_Dutch)\n"
+                           f"🇷🇴 [https://t.me/kaspa_ro](https://t.me/kaspa_ro)\n"
+                           f"🇷🇺 [https://t.me/kaspa_rus](https://t.me/kaspa_rus)\n"
+                           f"🇹🇷 [https://t.me/KaspaTurk](https://t.me/KaspaTurk)\n"
+                           f"🇹🇷 NEW [https://t.me/KaspaTr](https://t.me/KaspaTr)\n"
+                           f"🇻🇳 [https://t.me/Kaspa_VN](https://t.me/Kaspa_VN)\n"
+                           f"🇷🇸 [https://t.me/kaspa_balkan](https://t.me/kaspa_balkan)",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["miningpools"], func=check_debounce(60 * 10))
-def miningpools(e):
+async def miningpools(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"----------------------\n"
-                     f" *Kaspa mining pools*\n"
-                     f"----------------------\n"
-                     f"[F2POOL](https://www.f2pool.com/coin/kaspa)\n"
-                     f"[ACC-POOL](https://kaspa.acc-pool.pw/)\n"
-                     f"[KASPA-POOL](https://kaspa-pool.org/)\n"
-                     f"[HEROMINERS](https://kaspa.herominers.com/)\n"
-                     f"[KYIV KASPA POOL](https://kaspa.ixbase.info/)\n"
-                     f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
-                     f"[P1 POOL](https://p1pool.com/)\n"
-                     f"[KRYPTEX](https://pool.kryptex.com/en/kas)\n"
-                     f"[HASHPOOL](https://hashpool.com/coins/KAS)\n\n"
-                     f"[More](https://miningpoolstats.stream/kaspa)",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id,
+                           f"----------------------\n"
+                           f" *Kaspa mining pools*\n"
+                           f"----------------------\n"
+                           f"[F2POOL](https://www.f2pool.com/coin/kaspa)\n"
+                           f"[ACC-POOL](https://kaspa.acc-pool.pw/)\n"
+                           f"[KASPA-POOL](https://kaspa-pool.org/)\n"
+                           f"[HEROMINERS](https://kaspa.herominers.com/)\n"
+                           f"[KYIV KASPA POOL](https://kaspa.ixbase.info/)\n"
+                           f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
+                           f"[P1 POOL](https://p1pool.com/)\n"
+                           f"[KRYPTEX](https://pool.kryptex.com/en/kas)\n"
+                           f"[HASHPOOL](https://hashpool.com/coins/KAS)\n\n"
+                           f"[More](https://miningpoolstats.stream/kaspa)",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
 
 @bot.message_handler(commands=["links"], func=check_debounce(60 * 10))
-def links(e):
+async def links(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"----------------------\n"
-                     f" *Most important links*\n"
-                     f"----------------------\n"
-                     f"[Website](https://kaspa.org/)\n"
-                     f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
-                     f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
-                     f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
-                     f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id,
+                           f"----------------------\n"
+                           f" *Most important links*\n"
+                           f"----------------------\n"
+                           f"[Website](https://kaspa.org/)\n"
+                           f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
+                           f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
+                           f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
+                           f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
     # telegram bot features
 
 
 @bot.message_handler(commands=["explorers"], func=check_debounce(60 * 10))
-def explorers(e):
+async def explorers(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     f"----------------------\n"
-                     f" *Kaspa explorers*\n"
-                     f"----------------------\n"
-                     f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
-                     f"[Kaspa Block Explorer](https://explorer.kaspa.org/)\n"
-                     f"[KAS FYI](https://kas.fyi/)\n",
-                     parse_mode="Markdown",
-                     disable_web_page_preview=True)
+    await bot.send_message(e.chat.id,
+                           f"----------------------\n"
+                           f" *Kaspa explorers*\n"
+                           f"----------------------\n"
+                           f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
+                           f"[Kaspa Block Explorer](https://explorer.kaspa.org/)\n"
+                           f"[KAS FYI](https://kas.fyi/)\n",
+                           parse_mode="Markdown",
+                           disable_web_page_preview=True)
 
     # telegram bot features
 
 
 @bot.message_handler(commands=["withdraw"])
-def withdraw(e):
+async def withdraw(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -675,22 +702,22 @@ def withdraw(e):
         sender = f"{e.from_user.id}"
         get_wallet(username_to_uuid(sender))
     except Exception:
-        msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                          f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                                f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
+                                     parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61}", e.text)):
-        msg = bot.send_message(e.chat.id, "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
+                                     parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     if not (amount := re.search(" (\d+([.,]\d+)?)( |$)(KAS)?", e.text, re.IGNORECASE)):
-        bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
+        await bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
         return
     else:
         amount = float(amount[1].replace(",", "."))
@@ -704,28 +731,28 @@ def withdraw(e):
                          e.chat.id,
                          inclusiveFee=inclusive_fee_match is not None)
     except tipping.WalletInsufficientBalanceError as ex:
-        bot.send_message(e.chat.id, f"{ex}")
+        await bot.send_message(e.chat.id, f"{ex}")
 
 
 @bot.message_handler(commands=["telegram_wallet"])
-def tgwallet(e):
+async def tgwallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    bot.send_message(e.chat.id,
-                     """<b>To create a wallet DM @kaspanet_bot with the command <code>/create_wallet</code>.</b>
-
-Then you can use:
-<b>  /wallet_info</b> - Shows either your or the replied user's wallet information.
-<b>  /tip 1.23 KAS</b> - reply to someone's message and send him/her a tip.
-<b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
-"""
-                     "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
-                     parse_mode="html")
+    await bot.send_message(e.chat.id,
+                           """<b>To create a wallet DM @kaspanet_bot with the command <code>/create_wallet</code>.</b>
+      
+      Then you can use:
+      <b>  /wallet_info</b> - Shows either your or the replied user's wallet information.
+      <b>  /tip 1.23 KAS</b> - reply to someone's message and send him/her a tip.
+      <b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
+      """
+                           "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
+                           parse_mode="html")
 
 
 @bot.message_handler(commands=["tip"])
-def send_kas(e):
+async def send_kas(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -735,9 +762,9 @@ def send_kas(e):
         # sender = e.from_user.username
         sender = f"{e.from_user.id}"
     except Exception:
-        msg = bot.send_message(e.chat.id, f"You do not have a wallet yet. "
-                                          f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, f"You do not have a wallet yet. "
+                                                f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
+                                     parse_mode="Markdown")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -755,9 +782,9 @@ def send_kas(e):
         #     recipient = re.search("@[^ ]+", e.text)[0]
         #     recipient_username = recipient.lstrip("@")
         # except:
-        msg = bot.send_message(e.chat.id, "Could not determine a recipient!\n"
-                                          "Reply to someone's message and write:\n `/tip X.XX KAS`.",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, "Could not determine a recipient!\n"
+                                                "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                                     parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
@@ -769,10 +796,10 @@ def send_kas(e):
         else:
             recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
     except Exception:
-        msg = bot.send_message(e.chat.id,
-                               f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
-                               f"DM @kaspanet_bot with /create_wallet to create a new wallet.",
-                               parse_mode="html")
+        msg = await bot.send_message(e.chat.id,
+                                     f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
+                                     f"DM @kaspanet_bot with /create_wallet to create a new wallet.",
+                                     parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
         return
@@ -780,16 +807,16 @@ def send_kas(e):
     try:
         amount = float(re.search(" (\d+([.,]\d+)?)( |$)(KAS)?", e.text, re.IGNORECASE)[1].replace(",", "."))
     except Exception:
-        msg = bot.send_message(e.chat.id, "Can't parse the amount.\n"
-                                          "Reply to someone's message and write:\n `/tip X.XX KAS`.",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, "Can't parse the amount.\n"
+                                                "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                                     parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
         return
 
     if amount < 0.00001:
-        msg = bot.send_message(e.chat.id, "Minimum amount is 0.00001 KAS",
-                               parse_mode="Markdown")
+        msg = await bot.send_message(e.chat.id, "Minimum amount is 0.00001 KAS",
+                                     parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
         return
@@ -802,16 +829,17 @@ def send_kas(e):
                          recipient_username=recipient_username,
                          sender_name=sender_name)
     except WalletInsufficientBalanceError:
-        bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
+        await bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
 
 
 @bot.message_handler(commands=["create_wallet"])
-def create_wallet(e):
+async def create_wallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     if e.chat.type != "private":
-        msg = bot.send_message(e.chat.id, "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.")
+        msg = await bot.send_message(e.chat.id,
+                                     "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -822,40 +850,40 @@ def create_wallet(e):
         wallet = create_new_wallet(get_wallet_pw(f"{user_id}"),
                                    username_to_uuid(f"{user_id}"))
         seed = wallet["mnemonic"]
-        bot.send_message(e.chat.id, f"<b>Welcome to Kaspa Telegram wallet!</b>\n"
-                                    f"Wallet creation was successful. Your kaspa address is:"
-                                    f"\n<code>{wallet['publicAddress']}</code>"
-                                    f"\n\nYour seed phrase is:\n"
-                                    f"<code>{seed}</code>\n\n"
-                                    f"To use your wallet or get information, use the following commands:\n"
-                                    "  /wallet_info - Shows either your or the replied user's wallet information.\n"
-                                    "  /tip 1.23 KAS - reply to someone's message and send him/her a tip.\n"
-                                    "  /withdraw kaspa:... 1.23 KAS - Withdraw KAS from your Telegram wallet to another address"
-                                    f"\n\nPlease be advised that neither the dev nor any of the kaspa community is"
-                                    f" responsible for any issues or losses that may occur with the use of this wallet."
-                                    f" Use at your own risk.",
-                         parse_mode="html")
+        await bot.send_message(e.chat.id, f"<b>Welcome to Kaspa Telegram wallet!</b>\n"
+                                          f"Wallet creation was successful. Your kaspa address is:"
+                                          f"\n<code>{wallet['publicAddress']}</code>"
+                                          f"\n\nYour seed phrase is:\n"
+                                          f"<code>{seed}</code>\n\n"
+                                          f"To use your wallet or get information, use the following commands:\n"
+                                          "  /wallet_info - Shows either your or the replied user's wallet information.\n"
+                                          "  /tip 1.23 KAS - reply to someone's message and send him/her a tip.\n"
+                                          "  /withdraw kaspa:... 1.23 KAS - Withdraw KAS from your Telegram wallet to another address"
+                                          f"\n\nPlease be advised that neither the dev nor any of the kaspa community is"
+                                          f" responsible for any issues or losses that may occur with the use of this wallet."
+                                          f" Use at your own risk.",
+                               parse_mode="html")
 
         try:
             send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
-            bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.")
+            await bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.")
         except:
             logging.exception("Kaspa start tip didn't work.")
 
 
     except WalletCreationError:
-        bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
+        await bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
 
 
 @bot.message_handler(commands=["kaspacity"])
-def kaspacity(e):
+async def kaspacity(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
     with open("./res/kaspacity.jpg", "rb") as f:
-        bot.send_photo(e.chat.id,
-                       f,
-                       f'''Do you want to play around with live KASPA transactions or just show it to a friend?
+        await bot.send_photo(e.chat.id,
+                             f,
+                             f'''Do you want to play around with live KASPA transactions or just show it to a friend?
 
 Try out this demonstrator! Head to the office, enter the building and get a FREE $KAS! After that, you can spend it in the restaurant or the shopping mall..
 
@@ -871,7 +899,7 @@ Rob 🚀 lAmeR
 
 
 @bot.message_handler(commands=["wallet_info", "wi"])
-def check_wallet(e):
+async def check_wallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
@@ -899,15 +927,15 @@ def check_wallet(e):
 
         img_bytes = create_qr_code_img(wallet["publicAddress"])
 
-        msg = bot.send_photo(e.chat.id, photo=img_bytes,
-                             caption=f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
-                             parse_mode="html",
-                             reply_markup=show_button)
+        msg = await bot.send_photo(e.chat.id, photo=img_bytes,
+                                   caption=f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
+                                   parse_mode="html",
+                                   reply_markup=show_button)
 
     except WalletNotFoundError:
-        msg = bot.send_message(e.chat.id,
-                               f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
-                               parse_mode="html")
+        msg = await bot.send_message(e.chat.id,
+                                     f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
+                                     parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, e.message_id))
 
@@ -917,10 +945,10 @@ def progress_bar(perc):
     return green_boxes * "🟩" + "⬜" * (8 - green_boxes)
 
 
-def send_kas_and_log(sender_username, to_address, amount, chat_id,
-                     recipient_username=None,
-                     inclusiveFee=False,
-                     sender_name=""):
+async def send_kas_and_log(sender_username, to_address, amount, chat_id,
+                           recipient_username=None,
+                           inclusiveFee=False,
+                           sender_name=""):
     tx_id = create_tx(username_to_uuid(sender_username),
                       get_wallet_pw(sender_username),
                       to_address,
@@ -933,18 +961,18 @@ def send_kas_and_log(sender_username, to_address, amount, chat_id,
         msg_amount = msg_amount.rstrip("0")
         msg_amount = msg_amount.rstrip(".")
 
-    message = bot.send_message(chat_id,
-                               f"{sender_name} sending <b>{msg_amount} KAS</b> to \n"
-                               f"{f'@{recipient_username}' if recipient_username else ''}"
-                               f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
-                               f"Value\n"
-                               f"  <b>{amount / 100000000 * _get_kas_price():.02f} USD</b>\n"
-                               f"TX-ID\n"
-                               f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
-                               f"Block-ID\n"
-                               f"   ⏳ in progress",
-                               parse_mode="html",
-                               disable_web_page_preview=True)
+    message = await bot.send_message(chat_id,
+                                     f"{sender_name} sending <b>{msg_amount} KAS</b> to \n"
+                                     f"{f'@{recipient_username}' if recipient_username else ''}"
+                                     f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
+                                     f"Value\n"
+                                     f"  <b>{amount / 100000000 * _get_kas_price():.02f} USD</b>\n"
+                                     f"TX-ID\n"
+                                     f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
+                                     f"Block-ID\n"
+                                     f"   ⏳ in progress",
+                                     parse_mode="html",
+                                     disable_web_page_preview=True)
 
     TX_CHECKER[tx_id] = (time.time(), message)
 
@@ -971,7 +999,7 @@ def get_price_message(days):
     message = f"📈 Price Update for {days}d 📈\n" \
               f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
               f"{'-' * 40}\n" \
-              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.4f} USD*\n\n" \
+              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.5f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
               f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
               f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n" \
@@ -1009,7 +1037,7 @@ def add_donation_channel(chat_id):
         DONATION_CHANNELS.append(chat_id)
 
 
-def check_donations():
+async def check_donations():
     donation_announced = 0
     while True:
         try:
@@ -1028,15 +1056,15 @@ def check_donations():
 
                         try:
                             if (donation_balance - donation_announced) >= 1000:
-                                bot.send_message(c_id,
-                                                 f"<b>Donation received for</b>\n"
-                                                 f"* Telegram bot\n"
-                                                 f"* REST-API\n"
-                                                 f"* Blockexplorer\n"
-                                                 f"* Telegram wallet feature\n\n"
-                                                 f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
-                                                 f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
-                                                 parse_mode="html")
+                                await bot.send_message(c_id,
+                                                       f"<b>Donation received for</b>\n"
+                                                       f"* Telegram bot\n"
+                                                       f"* REST-API\n"
+                                                       f"* Blockexplorer\n"
+                                                       f"* Telegram wallet feature\n\n"
+                                                       f"Did you see the super fast speed?\n\nThank you for <b>{donation_balance - donation_announced:,.0f} KAS</b> donated to \n"
+                                                       f"<code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>\nI appreciate ♥♥♥",
+                                                       parse_mode="html")
                         except Exception:
                             pass
 
@@ -1047,20 +1075,20 @@ def check_donations():
         time.sleep(5)
 
 
-def check_del_messages():
+async def check_del_messages():
     while True:
         for ts, chat_id, msg_id in list(DELETE_MESSAGES_CACHE):
             if time.time() >= ts:
                 DELETE_MESSAGES_CACHE.remove((ts, chat_id, msg_id))
                 try:
-                    bot.delete_message(chat_id, msg_id)
+                    await bot.delete_message(chat_id, msg_id)
                 except Exception:
                     logging.exception('Can not remove this message. Sorry')
 
         time.sleep(2)
 
 
-def check_tx_ids():
+async def check_tx_ids():
     resp = requests.get(r"https://api.kaspa.org/info/network")
     start_block = resp.json()["tipHashes"][0]
 
@@ -1097,17 +1125,17 @@ def check_tx_ids():
 
                             new_html += f"\nTime needed:\n   ~ {stop_time - start_time:.02f}s"
 
-                            bot.edit_message_text(new_html,
-                                                  chat_id=message.chat.id,
-                                                  message_id=message.message_id,
-                                                  parse_mode="html",
-                                                  disable_web_page_preview=True,
-                                                  reply_markup=InlineKeyboardMarkup(
-                                                      [[InlineKeyboardButton("Show TX",
-                                                                             url=f"https://explorer.kaspa.org/txs/{tx_id}")],
-                                                       [InlineKeyboardButton("Show block",
-                                                                             url=f"https://explorer.kaspa.org/blocks/{block_hash}")]])
-                                                  )
+                            await bot.edit_message_text(new_html,
+                                                        chat_id=message.chat.id,
+                                                        message_id=message.message_id,
+                                                        parse_mode="html",
+                                                        disable_web_page_preview=True,
+                                                        reply_markup=InlineKeyboardMarkup(
+                                                            [[InlineKeyboardButton("Show TX",
+                                                                                   url=f"https://explorer.kaspa.org/txs/{tx_id}")],
+                                                             [InlineKeyboardButton("Show block",
+                                                                                   url=f"https://explorer.kaspa.org/blocks/{block_hash}")]])
+                                                        )
 
                             print(f"removing {tx_id}")
                             TX_CHECKER.pop(tx_id)
@@ -1126,7 +1154,7 @@ def check_tx_ids():
             logging.exception('Error in TX-checker-thread')
 
 
-def check_exchange_pool():
+async def check_exchange_pool():
     donation_announced = 0
     while True:
         donation_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
@@ -1140,52 +1168,62 @@ def check_exchange_pool():
             if donation_announced:
                 if donation_balance - donation_announced >= 5000:
                     for c_id in DONATION_CHANNELS:
-                        bot.send_message(c_id,  # -1001589070884,
-                                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
-                                         f" We received a new donation of\n\n"
-                                         f" *{donation_balance - donation_announced:,.0f} KAS* for the new exchange"
-                                         f"\n\n♥♥♥",
-                                         parse_mode="Markdown")
+                        await bot.send_message(c_id,  # -1001589070884,
+                                               f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
+                                               f" We received a new donation of\n\n"
+                                               f" *{donation_balance - donation_announced:,.0f} KAS* for the new exchange"
+                                               f"\n\n♥♥♥",
+                                               parse_mode="Markdown")
 
             donation_announced = donation_balance
         time.sleep(60)
 
 
 @bot.message_handler(commands=["version"])
-def version(e):
-    bot.send_message(e.chat.id,
-                     f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
-                     parse_mode="Markdown")
+async def version(e):
+    await bot.send_message(e.chat.id,
+                           f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
+                           parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["channels"])
-def channels(e):
+async def channels(e):
     global DONATION_CHANNELS
     if e.chat.id == 1922783296:
-        bot.send_message(e.chat.id,
-                         f"{DONATION_CHANNELS}",
-                         parse_mode="Markdown")
+        await bot.send_message(e.chat.id,
+                               f"{DONATION_CHANNELS}",
+                               parse_mode="Markdown")
 
 
 if __name__ == '__main__':
+    import asyncio
+
+
     # send the request to the server and retrive the response
     # with KaspaInterface.kaspa_connection() as client:
     # subscribe utxo change for donation address
-    t1 = threading.Thread(target=check_tx_ids, daemon=False)
-    t1.start()
+    # t1 = threading.Thread(target=check_tx_ids, daemon=False)
+    # t1.start()
+    #
+    # t2 = threading.Thread(target=check_donations, daemon=False)
+    # t2.start()
+    #
+    # t3 = threading.Thread(target=check_del_messages, daemon=False)
+    # t3.start()
+    #
+    # t4 = threading.Thread(target=check_exchange_pool, daemon=False)
+    # t4.start()
 
-    t2 = threading.Thread(target=check_donations, daemon=False)
-    t2.start()
+    async def run():
+        await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(), check_exchange_pool())
+        # while True:
+        #     try:
+        #         bot.polling(none_stop=True)
+        #     except Exception:
+        #         logging.exception("Something happenend")
+        #         time.sleep(10)
 
-    t3 = threading.Thread(target=check_del_messages, daemon=False)
-    t3.start()
+        await asyncio.gather(bot.polling())
 
-    t4 = threading.Thread(target=check_exchange_pool, daemon=False)
-    t4.start()
 
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception:
-            logging.exception("Something happenend")
-            time.sleep(10)
+    asyncio.run(bot.polling())

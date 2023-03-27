@@ -12,6 +12,7 @@ kaleido = "*"
 cachetools = "*"
 qrcode = "*"
 pillow = "*"
+aiohttp = "*"
 
 [dev-packages]
 

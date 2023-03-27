@@ -7,14 +7,14 @@ import requests
 from cachetools.func import ttl_cache
 
 
-@ttl_cache(ttl=30)
+@ttl_cache(120)
 def request_market_chart(days=1):
-    return requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}").json()
+    return requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}",
+                        timeout=10).json()
 
 
 def get_image_stream(days=1):
     d = request_market_chart(days)
-
     data = [(datetime.utcfromtimestamp(x[0] / 1000), x[1]) for x in d["prices"]]
     a = pandas.DataFrame(data, columns=["Time", "USD"])
 
