@@ -13,6 +13,7 @@ cachetools = "*"
 qrcode = "*"
 pillow = "*"
 aiohttp = "*"
+aiocache = "*"
 
 [dev-packages]
 

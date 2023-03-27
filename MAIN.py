@@ -1,20 +1,21 @@
 # encoding: utf-8
+import asyncio.exceptions
 import logging
 import math
 import os
 import re
-import threading
 import time
 from datetime import datetime
 
+import aiohttp
 import qrcode
 import requests
 from PIL import Image
+from aiocache import cached
 from cachetools.func import ttl_cache
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import HorizontalGradiantColorMask
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
-from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
@@ -78,13 +79,12 @@ def create_qr_code_img(text):
     # save the QR code generated
     return QRimg
 
+
 def chef_only(*args, **kwargs):
     try:
         return args[0].from_user.id == 1922783296
     except Exception:
         return False
-
-
 
 
 def check_debounce(seconds=60 * 60):
@@ -137,11 +137,11 @@ def check_only_private(*args):
         return True
 
 
-async def ignore_channels(ignore_ids):
-    async def wrapper(*args, **kwargs):
+def ignore_channels(ignore_ids):
+    def wrapper(*args, **kwargs):
         if str(args[0].chat.id) in ignore_ids:
             try:
-                await bot.delete_message(args[0].chat.id, args[0].id)
+                asyncio.gather(bot.delete_message(args[0].chat.id, args[0].id))
                 return False
             except ApiTelegramException as e:
                 if "message can't be deleted for everyone" not in str(e):
@@ -179,7 +179,7 @@ async def callback_query_price_update(call):
             days = 1
 
         try:
-            message = get_price_message(days)
+            message = await get_price_message(days)
         except Exception:
             await bot.send_message(all.message.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             logging.exception('Exception at price update')
@@ -212,7 +212,7 @@ async def callback_query_price_update(call):
 async def callback_query_hashrate_update(call):
     try:
         try:
-            hashrate = kaspa_api.get_hashrate()["hashrate"]
+            hashrate = (await kaspa_api.get_hashrate())["hashrate"]
         except Exception as e:
             print(str(e))
             return
@@ -245,9 +245,11 @@ async def donate(e):
     await bot.send_message(e.chat.id,
                            f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
                            f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
-                           parse_mode="Markdown")\
+                           parse_mode="Markdown") \
+ \
+    @ bot.message_handler(commands=["announce"], func=chef_only)
 
-@bot.message_handler(commands=["announce"], func=chef_only)
+
 async def announce(e):
     if text := e.text[10:]:
         for c_id in DONATION_CHANNELS:
@@ -273,7 +275,7 @@ async def balance(e):
             await bot.send_message(e.chat.id, "kaspa wallet not valid.")
             return
 
-        balance = kaspa_api.get_balance(address)["balance"] / 100000000
+        balance = (await kaspa_api.get_balance(address))["balance"] / 100000000
 
         await bot.send_message(e.chat.id, f"\nBalance for\n"
                                           f"  {address}\n"
@@ -290,8 +292,8 @@ async def devfund(e):
 
     try:
         try:
-            balance_mining = kaspa_api.get_balance(DEV_MINING_ADDR)["balance"] / 100000000
-            balance_donation = kaspa_api.get_balance(DEV_DONATION_ADDR)["balance"] / 100000000
+            balance_mining = (await kaspa_api.get_balance(DEV_MINING_ADDR))["balance"] / 100000000
+            balance_donation = (await kaspa_api.get_balance(DEV_DONATION_ADDR))["balance"] / 100000000
         except TimeoutError as e:
             print(f'Exception raised: {e}')
             return
@@ -314,7 +316,7 @@ async def coin_supply(e):
         add_donation_channel(e.chat.id)
 
     try:
-        coin_supply = kaspa_api.get_coin_supply()
+        coin_supply = await kaspa_api.get_coin_supply()
 
         if coin_supply is None:
             return
@@ -352,14 +354,14 @@ async def price(e):
                     days = 1
 
                 try:
-                    msg = get_price_message(days)
+                    msg = await get_price_message(days)
                     await bot.send_photo(e.chat.id,
                                          get_image_stream(days),
                                          caption=msg,
                                          parse_mode="Markdown",
                                          reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                                   callback_data="cb_update")]]))
-                except requests.ReadTimeout:
+                except asyncio.exceptions.TimeoutError:
                     await bot.send_message(e.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             except Exception:
                 logging.exception(f'Raised exception')
@@ -367,24 +369,23 @@ async def price(e):
         logging.exception(str(e))
 
 
-@ttl_cache(ttl=60)
-def get_coin_info():
-    resp = requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
-                        params={"tickers": False,
-                                "community_data": False,
-                                "developer_data": False},
-                        timeout=10)
+@cached(ttl=60)
+async def get_coin_info():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
+                               params={"tickers": "true",
+                                       "community_data": "False",
+                                       "developer_data": "False"},
+                               timeout=10) as resp:
+            return await resp.json()
 
-    return resp.json()
 
-
-
-def get_ath_message(name):
+async def get_ath_message(name):
     try:
         coin = name
 
         try:
-            coin_info = get_coin_info()
+            coin_info = await get_coin_info()
         except Exception:
             return
 
@@ -426,7 +427,7 @@ async def ath(e):
                                    f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
         else:
             try:
-                message = get_ath_message("kas")
+                message = await get_ath_message("kas")
             except Exception as e:
                 return
             if message:
@@ -477,11 +478,11 @@ async def mining_reward(e):
         suffix = match["suffix"]
         own_hashrate = match["dec"]
 
-        network_hashrate = kaspa_api.get_hashrate()["hashrate"] * 1_000_000_000_000
+        network_hashrate = (await kaspa_api.get_hashrate())["hashrate"] * 1_000_000_000_000
         own_hashrate = own_hashrate + suffix if suffix else own_hashrate
         own_hashrate = hashrate_to_int(own_hashrate)
 
-        stats = kaspa_api.get_blockdag_info()
+        stats = await kaspa_api.get_blockdag_info()
 
         if own_hashrate:
             hash_percent_of_network = percent_of_network(own_hashrate, network_hashrate)
@@ -516,11 +517,11 @@ async def mcap(e):
         add_donation_channel(e.chat.id)
 
     try:
-        kaspa_info = get_coin_info()
+        kaspa_info = await get_coin_info()
         price_usd = kaspa_info["market_data"]["current_price"]["usd"]
         rank = kaspa_info["market_data"]["market_cap_rank"]
 
-        circ_supply = float(kaspa_api.get_coin_supply()["circulatingSupply"]) / 100000000
+        circ_supply = float((await kaspa_api.get_coin_supply())["circulatingSupply"]) / 100000000
 
         await bot.send_message(e.chat.id,
                                f"*$KAS MARKET CAP*\n"
@@ -541,7 +542,7 @@ async def max_hashrate(e):
         add_donation_channel(e.chat.id)
 
     try:
-        max_hashrate = kaspa_api.get_max_hashrate()
+        max_hashrate = await kaspa_api.get_max_hashrate()
 
         await bot.send_message(e.chat.id,
                                f"Max Kaspa Hashrate\n"
@@ -564,7 +565,7 @@ async def hashrate(e):
         add_donation_channel(e.chat.id)
 
     try:
-        hashrate = kaspa_api.get_hashrate()["hashrate"]
+        hashrate = (await kaspa_api.get_hashrate())["hashrate"]
         await bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                         callback_data="cb_update_hashrate")]]))
@@ -822,12 +823,12 @@ async def send_kas(e):
         return
 
     try:
-        send_kas_and_log(sender,
-                         recipient,
-                         round(amount * 100000000),
-                         e.chat.id,
-                         recipient_username=recipient_username,
-                         sender_name=sender_name)
+        await send_kas_and_log(sender,
+                               recipient,
+                               round(amount * 100000000),
+                               e.chat.id,
+                               recipient_username=recipient_username,
+                               sender_name=sender_name)
     except WalletInsufficientBalanceError:
         await bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
 
@@ -917,7 +918,7 @@ async def check_wallet(e):
                                                                   callback_data=f"cb_remove_message;{e.message_id};{e.from_user.id}")]
                                             ])
 
-        wallet_balance = kaspa_api.get_balance(wallet["publicAddress"])["balance"] / 100000000
+        wallet_balance = (await kaspa_api.get_balance(wallet["publicAddress"]))["balance"] / 100000000
 
         wallet_balance = f"{wallet_balance:.8f}"
 
@@ -977,9 +978,10 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
     TX_CHECKER[tx_id] = (time.time(), message)
 
 
-def get_price_message(days):
+async def get_price_message(days):
     coin = "kaspa"
-    coin_info = get_coin_info()
+    coin_info = await get_coin_info()
+
 
     if not coin_info:
         return
@@ -1038,12 +1040,13 @@ def add_donation_channel(chat_id):
 
 
 async def check_donations():
+    print("checking don")
     donation_announced = 0
     while True:
         try:
             donation_addr = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
             try:
-                donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+                donation_balance = (await kaspa_api.get_balance(donation_addr))["balance"] / 100000000
             except Exception:
                 time.sleep(1)
                 continue
@@ -1072,7 +1075,8 @@ async def check_donations():
         except Exception:
             logging.exception('Error checking donation address')
 
-        time.sleep(5)
+        print("hier")
+        await asyncio.sleep(5)
 
 
 async def check_del_messages():
@@ -1085,7 +1089,7 @@ async def check_del_messages():
                 except Exception:
                     logging.exception('Can not remove this message. Sorry')
 
-        time.sleep(2)
+        await asyncio.sleep(2)
 
 
 async def check_tx_ids():
@@ -1109,7 +1113,7 @@ async def check_tx_ids():
                         resp = requests.get(fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true")
                         resp = resp.json()
                     except Exception:
-                        time.sleep(0.3)
+                        await asyncio.sleep(0.3)
                         continue
 
                     # go through blocks and check tx_id
@@ -1148,8 +1152,8 @@ async def check_tx_ids():
                     continue
 
                 i = 0
-
-            time.sleep(0.5)
+            print(i)
+            await asyncio.sleep(0.5)
         except Exception:
             logging.exception('Error in TX-checker-thread')
 
@@ -1159,7 +1163,7 @@ async def check_exchange_pool():
     while True:
         donation_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
         try:
-            donation_balance = kaspa_api.get_balance(donation_addr)["balance"] / 100000000
+            donation_balance = (await kaspa_api.get_balance(donation_addr))["balance"] / 100000000
         except Exception:
             time.sleep(1)
             continue
@@ -1215,7 +1219,8 @@ if __name__ == '__main__':
     # t4.start()
 
     async def run():
-        await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(), check_exchange_pool())
+        await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(),
+                             bot.polling())
         # while True:
         #     try:
         #         bot.polling(none_stop=True)
@@ -1223,7 +1228,5 @@ if __name__ == '__main__':
         #         logging.exception("Something happenend")
         #         time.sleep(10)
 
-        await asyncio.gather(bot.polling())
 
-
-    asyncio.run(bot.polling())
+    asyncio.run(run())

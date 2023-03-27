@@ -1,42 +1,42 @@
 # encoding: utf-8
-
-
+import asyncio
 from urllib.parse import urljoin
 
+import aiohttp
 import requests
 from cachetools.func import ttl_cache
+from aiocache import cached
 
 _session = requests.session()
 
 BASE_URL = "https://api.kaspa.org/"
 
 
-def __get(endpoint, params=None):
-    try:
-        return _session.get(urljoin(BASE_URL, endpoint), params=params).json()
-    except requests.exceptions.JSONDecodeError:
-        pass
+async def __get(endpoint, params=None):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(urljoin(BASE_URL, endpoint), params=params) as resp:
+            return await resp.json()
 
 
-def get_coin_supply():
-    return __get("info/coinsupply")
+async def get_coin_supply():
+    return await __get("info/coinsupply")
 
-@ttl_cache(ttl=15)
-def get_hashrate():
-    return __get("info/hashrate")
-
-
-def get_balance(addr):
-    return __get(f"addresses/{addr}/balance")
-
-@ttl_cache(120)
-def get_max_hashrate():
-    return __get(f"info/hashrate/max")
+@cached(ttl=15)
+async def get_hashrate():
+    return await __get("info/hashrate")
 
 
-def get_coin_supply():
-    return __get(f"info/coinsupply")
+async def get_balance(addr):
+    return await __get(f"addresses/{addr}/balance")
+
+@cached(ttl=120)
+async def get_max_hashrate():
+    return await __get(f"info/hashrate/max")
 
 
-def get_blockdag_info():
-    return __get(f"info/blockdag")
+async def get_coin_supply():
+    return await __get(f"info/coinsupply")
+
+
+async def get_blockdag_info():
+    return await __get(f"info/blockdag")
