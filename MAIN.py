@@ -886,7 +886,7 @@ async def create_wallet(e):
                                parse_mode="html")
 
         try:
-            send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
+            await send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
             await bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.")
         except:
             logging.exception("Kaspa start tip didn't work.")
