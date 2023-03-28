@@ -4,12 +4,12 @@ import logging
 import math
 import os
 import re
+import threading
 import time
 from datetime import datetime
 
 import aiohttp
 import qrcode
-import requests
 from PIL import Image
 from aiocache import cached
 from cachetools.func import ttl_cache
@@ -45,7 +45,7 @@ bot = AsyncTeleBot(os.environ["TELEBOT_TOKEN"])
 assert os.environ.get('DONATION_ADDRESS') is not None
 
 
-def create_qr_code_img(text):
+def create_qr_code_img(text, fast, result):
     # taking image which user wants
     # in the QR code center
     logo = Image.open("./res/kaspa-icon.png")
@@ -68,16 +68,20 @@ def create_qr_code_img(text):
     # generating QR code
     QRcode.make()
     # adding color to QR code
-    QRimg = QRcode.make_image(image_factory=StyledPilImage,
-                              module_drawer=RoundedModuleDrawer(),
-                              color_mask=HorizontalGradiantColorMask(right_color=(3, 38, 33),
-                                                                     left_color=(12, 110, 96))).convert('RGB')
+    if fast:
+        QRimg = QRcode.make_image(image_factory=StyledPilImage).convert("RGB")
+    else:
+        QRimg = QRcode.make_image(image_factory=StyledPilImage,
+                                  module_drawer=RoundedModuleDrawer(),
+                                  color_mask=HorizontalGradiantColorMask(right_color=(3, 38, 33),
+                                                                         left_color=(12, 110, 96))).convert('RGB')
     # set size of QR code
-    pos = ((QRimg.size[0] - logo.size[0]) // 2,
-           (QRimg.size[1] - logo.size[1]) // 2)
-    QRimg.paste(logo, pos)
+    if not fast:
+        pos = ((QRimg.size[0] - logo.size[0]) // 2,
+               (QRimg.size[1] - logo.size[1]) // 2)
+        QRimg.paste(logo, pos)
     # save the QR code generated
-    return QRimg
+    result["stream"] = QRimg
 
 
 def chef_only(*args, **kwargs):
@@ -156,7 +160,7 @@ def ignore_channels(ignore_ids):
 async def callback_remove_message(call):
     _, request_msg_id, requester_id = call.data.split(";")
 
-    requester_status = await bot.get_chat_member(call.message.chat.id, call.from_user.id).status
+    requester_status = (await bot.get_chat_member(call.message.chat.id, call.from_user.id)).status
 
     if call.from_user.id == requester_id or \
             call.from_user.id == 1922783296 or \
@@ -191,7 +195,7 @@ async def callback_query_price_update(call):
 
         try:
             await bot.edit_message_media(InputMedia(type='photo',
-                                                    media=get_image_stream(days),
+                                                    media=await get_image_stream(days),
                                                     caption=message,
                                                     parse_mode="markdown"),
                                          call.message.chat.id,
@@ -356,7 +360,7 @@ async def price(e):
                 try:
                     msg = await get_price_message(days)
                     await bot.send_photo(e.chat.id,
-                                         get_image_stream(days),
+                                         await get_image_stream(days),
                                          caption=msg,
                                          parse_mode="Markdown",
                                          reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
@@ -701,8 +705,9 @@ async def withdraw(e):
     try:
         # sender = e.from_user.username
         sender = f"{e.from_user.id}"
-        get_wallet(username_to_uuid(sender))
-    except Exception:
+        await get_wallet(username_to_uuid(sender))
+    except Exception as ex:
+        print(ex)
         msg = await bot.send_message(e.chat.id, f"You do not have a wallet yet. "
                                                 f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
                                      parse_mode="Markdown")
@@ -795,7 +800,7 @@ async def send_kas(e):
         if recipient == '5464545065':
             recipient = "kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73"
         else:
-            recipient = get_wallet(username_to_uuid(recipient.lstrip("@")))["publicAddress"]
+            recipient = (await get_wallet(username_to_uuid(recipient.lstrip("@"))))["publicAddress"]
     except Exception:
         msg = await bot.send_message(e.chat.id,
                                      f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
@@ -848,8 +853,8 @@ async def create_wallet(e):
 
     try:
         user_id = e.from_user.id
-        wallet = create_new_wallet(get_wallet_pw(f"{user_id}"),
-                                   username_to_uuid(f"{user_id}"))
+        wallet = await create_new_wallet(get_wallet_pw(f"{user_id}"),
+                                         username_to_uuid(f"{user_id}"))
         seed = wallet["mnemonic"]
         await bot.send_message(e.chat.id, f"<b>Welcome to Kaspa Telegram wallet!</b>\n"
                                           f"Wallet creation was successful. Your kaspa address is:"
@@ -904,14 +909,13 @@ async def check_wallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
+    user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
+    username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json else f"{e.from_user.username}"
+
+    wallet = await get_wallet(username_to_uuid(f"{user_id}")
+                              # ,get_wallet_pw(username)
+                              )
     try:
-        user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
-        username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json else f"{e.from_user.username}"
-
-        wallet = get_wallet(username_to_uuid(f"{user_id}")
-                            # ,get_wallet_pw(username)
-                            )
-
         show_button = InlineKeyboardMarkup([[InlineKeyboardButton("Show in explorer",
                                                                   url=f"https://explorer.kaspa.org/addresses/{wallet['publicAddress']}")],
                                             [InlineKeyboardButton("Remove message",
@@ -926,10 +930,24 @@ async def check_wallet(e):
             wallet_balance = wallet_balance.rstrip("0")
             wallet_balance = wallet_balance.rstrip(".")
 
-        img_bytes = create_qr_code_img(wallet["publicAddress"])
+        print("Starting")
+        result = {}
+        t1 = threading.Thread(target=create_qr_code_img, args=[wallet["publicAddress"], False, result])
+        t1.start()
+        while True:
+            await asyncio.sleep(0.3)
+            if not t1.is_alive():
+                break
+
+        img_bytes = result["stream"]
+
+        price = await _get_kas_price()
 
         msg = await bot.send_photo(e.chat.id, photo=img_bytes,
-                                   caption=f'@{username} telegram wallet is:\n<code>{wallet["publicAddress"]}</code>\nBalance:\n  <b>{wallet_balance} KAS</b>',
+                                   caption=f'@{username} telegram wallet is:\n'
+                                           f'<code>{wallet["publicAddress"]}</code>\n'
+                                           f'Balance:\n  <b>{wallet_balance} KAS</b>\n\n'
+                                           f'Value:\n  <b>{float(wallet_balance or 0)*float(price):.02f} $</b>',
                                    parse_mode="html",
                                    reply_markup=show_button)
 
@@ -950,11 +968,11 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
                            recipient_username=None,
                            inclusiveFee=False,
                            sender_name=""):
-    tx_id = create_tx(username_to_uuid(sender_username),
-                      get_wallet_pw(sender_username),
-                      to_address,
-                      amount,
-                      inclusiveFee=inclusiveFee)
+    tx_id = await create_tx(username_to_uuid(sender_username),
+                            get_wallet_pw(sender_username),
+                            to_address,
+                            amount,
+                            inclusiveFee=inclusiveFee)
 
     msg_amount = f"{amount / 100000000:.8f}"
 
@@ -967,7 +985,7 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
                                      f"{f'@{recipient_username}' if recipient_username else ''}"
                                      f"\n   <a href='https://explorer.kaspa.org/addresses/{to_address}'>{to_address[:16]}...{to_address[-10:]}</a>\n\n"
                                      f"Value\n"
-                                     f"  <b>{amount / 100000000 * _get_kas_price():.02f} USD</b>\n"
+                                     f"  <b>{amount / 100000000 * (await _get_kas_price()):.02f} USD</b>\n"
                                      f"TX-ID\n"
                                      f"   <a href='https://explorer.kaspa.org/txs/{tx_id}'>{tx_id[:6]}...{tx_id[-6:]}</a> ✅\n"
                                      f"Block-ID\n"
@@ -981,7 +999,6 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
 async def get_price_message(days):
     coin = "kaspa"
     coin_info = await get_coin_info()
-
 
     if not coin_info:
         return
@@ -1014,16 +1031,22 @@ async def get_price_message(days):
     return message
 
 
-@ttl_cache(ttl=60)
-def _get_kas_price():
+@cached(ttl=60)
+async def _get_kas_price():
     try:
-        resp = requests.get("https://api.coingecko.com/api/v3/simple/price",
-                            params={"ids": "kaspa",
-                                    "vs_currencies": "usd"})
-        if resp.status_code == 200:
-            return resp.json()["kaspa"]["usd"]
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.coingecko.com/api/v3/simple/price",
+                                   params={"ids": "kaspa",
+                                           "vs_currencies": "usd"},
+                                   timeout=5) as resp:
+                if resp.status == 200:
+                    return (await resp.json())["kaspa"]["usd"]
+                else:
+                    return 0
+
     except Exception as e:
         logging.exception(str(e))
+        return 0
 
 
 DONATION_CHANNELS = [-1001589070884, -1001205240510, -1001778657727, -1001208691907, -1001695274086, -1001831752155,
@@ -1093,8 +1116,11 @@ async def check_del_messages():
 
 
 async def check_tx_ids():
-    resp = requests.get(r"https://api.kaspa.org/info/network")
-    start_block = resp.json()["tipHashes"][0]
+    print("Check TX IDs")
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(r"https://api.kaspa.org/info/network") as resp:
+            start_block = (await resp.json())["tipHashes"][0]
 
     i = 0
 
@@ -1110,8 +1136,11 @@ async def check_tx_ids():
                     start_time, message = tx_object
                     stop_time = time.time()
                     try:
-                        resp = requests.get(fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true")
-                        resp = resp.json()
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(
+                                    fr"https://api.kaspa.org/blocks?lowHash={start_block}&includeBlocks=true") as r:
+                                resp = await r.json()
+
                     except Exception:
                         await asyncio.sleep(0.3)
                         continue
@@ -1146,8 +1175,10 @@ async def check_tx_ids():
 
             if i >= 80:
                 try:
-                    resp = requests.get(r"https://api.kaspa.org/info/network")
-                    start_block = resp.json()["tipHashes"][0]
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(r"https://api.kaspa.org/info/network") as resp:
+                            start_block = (await resp.json())["tipHashes"][0]
+
                 except Exception:
                     continue
 

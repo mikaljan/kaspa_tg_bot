@@ -3,8 +3,8 @@ import logging
 import os
 import uuid
 
-import requests
-from requests.auth import HTTPBasicAuth
+import aiohttp
+from aiohttp import BasicAuth
 
 _logger = logging.getLogger(__name__)
 
@@ -38,21 +38,21 @@ def get_wallet_pw(username):
 
 
 # Kaspa REST wallet functions
-def get_wallet(uuid, password=None):
-    resp = requests.get(f'https://kaspagames.org/api/wallets/{uuid}',
-                        auth=HTTPBasicAuth("0", password) if password else None)
+async def get_wallet(uuid, password=None):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f'https://kaspagames.org/api/wallets/{uuid}',
+                               auth=BasicAuth("0", password) if password else None) as resp:
+            if resp.status == 404:
+                raise WalletNotFoundError()
 
-    if resp.status_code == 404:
-        raise WalletNotFoundError()
+            if resp.status == 403:
+                raise WalletPasswordIncorrectError()
 
-    if resp.status_code == 403:
-        raise WalletPasswordIncorrectError()
-
-    if resp.status_code == 200:
-        return resp.json()
+            if resp.status == 200:
+                return await resp.json()
 
 
-def create_new_wallet(password, uuid=None):
+async def create_new_wallet(password, uuid=None):
     data = {
         "password": password
     }
@@ -60,16 +60,16 @@ def create_new_wallet(password, uuid=None):
     if uuid:
         data["uuid"] = uuid
 
-    resp = requests.post(f'https://kaspagames.org/api/wallets', json=data)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f'https://kaspagames.org/api/wallets', json=data) as resp:
+            if resp.status == 400:
+                raise WalletCreationError(resp.content)
 
-    if resp.status_code == 400:
-        raise WalletCreationError(resp.content)
-
-    if resp.status_code == 200:
-        return resp.json()
+            if resp.status == 200:
+                return await resp.json()
 
 
-def create_tx(uuid, password, to_address, amount, inclusiveFee=False):
+async def create_tx(uuid, password, to_address, amount, inclusiveFee=False):
     assert password
 
     data = {
@@ -78,22 +78,23 @@ def create_tx(uuid, password, to_address, amount, inclusiveFee=False):
         "inclusiveFee": inclusiveFee
     }
 
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f'https://kaspagames.org/api/wallets/{uuid}/transactions',
+                                json=data,
+                                auth=BasicAuth("0", password)) as r:
+            resp = r
+            content = (await r.content.read()).decode()
 
-
-    resp = requests.post(f'https://kaspagames.org/api/wallets/{uuid}/transactions',
-                         json=data,
-                         auth=HTTPBasicAuth("0", password))
-
-    if resp.status_code == 400:
+    if resp.status == 400:
         _logger.info(f'TX creation error: {resp.content}')
 
         if (resp.content.decode().startswith("Error: Insufficient")):
-            raise WalletInsufficientBalanceError(resp.content.decode())
+            raise WalletInsufficientBalanceError(content)
 
         raise WalletInsufficientBalanceError()
 
-    if resp.status_code == 200:
-        return resp.content.decode()
+    if resp.status == 200:
+        return content
 
     if b"Password incorrect" in resp.content:
         raise WalletPasswordIncorrectError()

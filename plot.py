@@ -1,20 +1,22 @@
 import io
 from datetime import datetime
 
+import aiohttp
 import pandas
 import plotly.express as px
-import requests
-from cachetools.func import ttl_cache
+from aiocache import cached
 
 
-@ttl_cache(120)
-def request_market_chart(days=1):
-    return requests.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}",
-                        timeout=10).json()
+@cached(ttl=120)
+async def request_market_chart(days=1):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days={days}",
+                               timeout=10) as resp:
+            return await resp.json()
 
 
-def get_image_stream(days=1):
-    d = request_market_chart(days)
+async def get_image_stream(days=1):
+    d = await request_market_chart(days)
     data = [(datetime.utcfromtimestamp(x[0] / 1000), x[1]) for x in d["prices"]]
     a = pandas.DataFrame(data, columns=["Time", "USD"])
 
