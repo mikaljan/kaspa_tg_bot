@@ -254,8 +254,6 @@ async def donate(e):
 
 @bot.message_handler(commands=["announce"], func=chef_only)
 async def announce(e):
-
-
     if text := e.text[10:]:
         for c_id in DONATION_CHANNELS:
             await bot.send_message(c_id,
