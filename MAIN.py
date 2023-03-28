@@ -249,12 +249,13 @@ async def donate(e):
     await bot.send_message(e.chat.id,
                            f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
                            f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
-                           parse_mode="Markdown") \
- \
-    @ bot.message_handler(commands=["announce"], func=chef_only)
+                           parse_mode="Markdown")
 
 
+@bot.message_handler(commands=["announce"], func=chef_only)
 async def announce(e):
+
+
     if text := e.text[10:]:
         for c_id in DONATION_CHANNELS:
             await bot.send_message(c_id,
@@ -947,7 +948,7 @@ async def check_wallet(e):
                                    caption=f'@{username} telegram wallet is:\n'
                                            f'<code>{wallet["publicAddress"]}</code>\n'
                                            f'Balance:\n  <b>{wallet_balance} KAS</b>\n\n'
-                                           f'Value:\n  <b>{float(wallet_balance or 0)*float(price):.02f} $</b>',
+                                           f'Value:\n  <b>{float(wallet_balance or 0) * float(price):.02f} $</b>',
                                    parse_mode="html",
                                    reply_markup=show_button)
 
