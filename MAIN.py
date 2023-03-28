@@ -1098,7 +1098,6 @@ async def check_donations():
         except Exception:
             logging.exception('Error checking donation address')
 
-        print("hier")
         await asyncio.sleep(5)
 
 
@@ -1183,7 +1182,6 @@ async def check_tx_ids():
                     continue
 
                 i = 0
-            print(i)
             await asyncio.sleep(0.5)
         except Exception:
             logging.exception('Error in TX-checker-thread')
