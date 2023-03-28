@@ -730,11 +730,11 @@ async def withdraw(e):
     inclusive_fee_match = re.search("inclusivefee", e.text, re.IGNORECASE)
 
     try:
-        send_kas_and_log(sender,
-                         to_address[0],
-                         round(amount * 100000000),
-                         e.chat.id,
-                         inclusiveFee=inclusive_fee_match is not None)
+        await send_kas_and_log(sender,
+                               to_address[0],
+                               round(amount * 100000000),
+                               e.chat.id,
+                               inclusiveFee=inclusive_fee_match is not None)
     except tipping.WalletInsufficientBalanceError as ex:
         await bot.send_message(e.chat.id, f"{ex}")
 
