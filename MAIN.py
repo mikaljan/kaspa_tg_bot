@@ -12,7 +12,6 @@ import aiohttp
 import qrcode
 from PIL import Image
 from aiocache import cached
-from cachetools.func import ttl_cache
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import HorizontalGradiantColorMask
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
@@ -58,7 +57,7 @@ def create_qr_code_img(text, fast, result):
     hsize = int((float(logo.size[1]) * float(wpercent)))
     logo = logo.resize((basewidth, hsize), Image.ANTIALIAS)
     QRcode = qrcode.QRCode(
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
         border=7
     )
 
@@ -694,6 +693,23 @@ async def explorers(e):
                            disable_web_page_preview=True)
 
     # telegram bot features
+
+
+@bot.message_handler(commands=["kaspa_qrcode"])
+async def kaspa_qrcode(e):
+    result = {}
+    text = e.text[14:]
+    t1 = threading.Thread(target=create_qr_code_img, args=[text, False, result])
+    t1.start()
+    while True:
+        await asyncio.sleep(0.3)
+        if not t1.is_alive():
+            break
+
+    img_bytes = result["stream"]
+    msg = await bot.send_photo(e.chat.id, photo=img_bytes,
+                               caption=f'<b>{text}</b>',
+                               parse_mode="html")
 
 
 @bot.message_handler(commands=["withdraw"])
