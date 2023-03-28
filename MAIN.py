@@ -1071,7 +1071,7 @@ async def check_donations():
             try:
                 donation_balance = (await kaspa_api.get_balance(donation_addr))["balance"] / 100000000
             except Exception:
-                time.sleep(1)
+                await asyncio.sleep(1)
                 continue
 
             if donation_balance != donation_announced:
