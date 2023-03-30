@@ -195,11 +195,11 @@ async def callback_query_price_update(call):
         try:
             if call.message.content_type == 'text':
                 await bot.edit_message_text(message,
-                                       call.message.chat.id,
-                                       call.message.id,
-                                       parse_mode="markdown",
-                                       reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                                callback_data="cb_update")]]))
+                                            call.message.chat.id,
+                                            call.message.id,
+                                            parse_mode="markdown",
+                                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                     callback_data="cb_update")]]))
             else:
                 await bot.edit_message_media(InputMedia(type='photo',
                                                         media=await get_image_stream(days),
@@ -618,6 +618,7 @@ async def buy(e):
                            f"Use with caution! ⚠️ \n"
                            f"----------------------------------\n"
                            f"🇦🇪 [https://t.me/kaspa_arabic](https://t.me/kaspa_arabic)\n"
+                           f"🇧🇩 [https://t.me/kaspa_bangladesh](https://t.me/kaspa_bangladesh)\n"
                            f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
                            f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
                            f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
@@ -630,6 +631,7 @@ async def buy(e):
                            f"🇯🇵 [https://t.me/Kaspa_Japan](https://t.me/Kaspa_Japan)\n"
                            f"🇰🇷 [https://t.me/kaspa_korea](https://t.me/kaspa_korea)\n"
                            f"🇮🇷 [https://t.me/Kaspa_persian](https://t.me/Kaspa_persian)\n"
+                           f"🇮🇷 [https://t.me/kaspapersianchannel](https://t.me/kaspapersianchannel)\n"
                            f"🇵🇭 [http://t.me/kaspa_ph](http://t.me/kaspa_ph)\n"
                            f"🇵🇱 [https://t.me/Kaspa_Poland](https://t.me/Kaspa_Poland)\n"
                            f"🇵🇹🇧🇷 [https://t.me/kaspa_portugues](https://t.me/kaspa_portugues)\n"
