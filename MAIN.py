@@ -188,19 +188,27 @@ async def callback_query_price_update(call):
             logging.exception('Exception at price update')
             return
 
-        if re.findall("\d", message) == re.findall("\d", call.message.caption):
+        if re.findall("\d", message) == re.findall("\d", call.message.caption or call.message.text):
             await bot.answer_callback_query(call.id, "Price chart is up to date.", False, cache_time=10)
             return
 
         try:
-            await bot.edit_message_media(InputMedia(type='photo',
-                                                    media=await get_image_stream(days),
-                                                    caption=message,
-                                                    parse_mode="markdown"),
-                                         call.message.chat.id,
-                                         call.message.id,
-                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                                  callback_data="cb_update")]]))
+            if call.message.content_type == 'text':
+                await bot.edit_message_text(message,
+                                       call.message.chat.id,
+                                       call.message.id,
+                                       parse_mode="markdown",
+                                       reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                callback_data="cb_update")]]))
+            else:
+                await bot.edit_message_media(InputMedia(type='photo',
+                                                        media=await get_image_stream(days),
+                                                        caption=message,
+                                                        parse_mode="markdown"),
+                                             call.message.chat.id,
+                                             call.message.id,
+                                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                      callback_data="cb_update")]]))
 
         except ApiTelegramException as e:
             if "message is not modified" not in str(e):
@@ -357,12 +365,21 @@ async def price(e):
 
                 try:
                     msg = await get_price_message(days)
-                    await bot.send_photo(e.chat.id,
-                                         await get_image_stream(days),
-                                         caption=msg,
-                                         parse_mode="Markdown",
-                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
-                                                                                                  callback_data="cb_update")]]))
+
+                    try:
+                        await bot.send_photo(e.chat.id,
+                                             await get_image_stream(days),
+                                             caption=msg,
+                                             parse_mode="Markdown",
+                                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                      callback_data="cb_update")]]))
+                    except Exception:
+                        logging.exception("Error generating image.")
+                        await bot.send_message(e.chat.id,
+                                               msg,
+                                               parse_mode="Markdown",
+                                               reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
+                                                                                                        callback_data="cb_update")]]))
                 except asyncio.exceptions.TimeoutError:
                     await bot.send_message(e.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             except Exception:
@@ -371,14 +388,10 @@ async def price(e):
         logging.exception(str(e))
 
 
-@cached(ttl=60)
+@cached(ttl=20)
 async def get_coin_info():
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://api.coingecko.com/api/v3/coins/kaspa",
-                               params={"tickers": "true",
-                                       "community_data": "False",
-                                       "developer_data": "False"},
-                               timeout=10) as resp:
+        async with session.get(f"https://api.kaspa.org/info/market-data") as resp:
             return await resp.json()
 
 
@@ -394,18 +407,15 @@ async def get_ath_message(name):
         if not coin_info:
             return
 
-        try:
-            symbol = coin_info['tickers'][0]['base']
-        except (ValueError, IndexError):
-            symbol = coin.upper()
+        symbol = "KAS"
 
-        ath_price = round(coin_info['market_data']['ath']['usd'], 6)
-        ath_date = datetime.fromisoformat(coin_info['market_data']['ath_date']['usd'][:-1] + "+00:00")
-        ath_change_percentage = coin_info['market_data']['ath_change_percentage']['usd']
+        ath_price = round(coin_info['ath']['usd'], 6)
+        ath_date = datetime.fromisoformat(coin_info['ath_date']['usd'][:-1] + "+00:00")
+        ath_change_percentage = coin_info['ath_change_percentage']['usd']
 
-        message = f"📈 ATH for *{symbol} - {coin_info['name']}*\n" \
+        message = f"📈 ATH for *{symbol} - Kaspa*\n" \
                   f"{'-' * 40}\n" \
-                  f"*Current price:* \n      {round(coin_info['market_data']['current_price']['usd'], 6):0.5f} USD\n\n" \
+                  f"*Current price:* \n      {round(coin_info['current_price']['usd'], 6):0.5f} USD\n\n" \
                   f" *ATH Price:*\n" \
                   f"      {ath_price:0.5f} USD\n" \
                   f" *ATH Date* :\n" \
@@ -520,8 +530,8 @@ async def mcap(e):
 
     try:
         kaspa_info = await get_coin_info()
-        price_usd = kaspa_info["market_data"]["current_price"]["usd"]
-        rank = kaspa_info["market_data"]["market_cap_rank"]
+        price_usd = kaspa_info["current_price"]["usd"]
+        rank = kaspa_info["market_cap_rank"]
 
         circ_supply = float((await kaspa_api.get_coin_supply())["circulatingSupply"]) / 100000000
 
@@ -1012,28 +1022,24 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
 
 
 async def get_price_message(days):
-    coin = "kaspa"
     coin_info = await get_coin_info()
 
     if not coin_info:
         return
 
-    try:
-        symbol = coin_info['tickers'][0]['base']
-    except (ValueError, IndexError, KeyError):
-        symbol = coin.upper()
+    symbol = "KAS"
 
-    price_change_1h = coin_info['market_data']['price_change_percentage_1h_in_currency'].get('usd', 0)
-    price_change_24h = coin_info['market_data']['price_change_percentage_24h_in_currency'].get('usd', 0)
-    price_change_7d = coin_info['market_data']['price_change_percentage_7d_in_currency'].get('usd', 0)
+    price_change_1h = coin_info['price_change_percentage_1h_in_currency'].get('usd', 0)
+    price_change_24h = coin_info['price_change_percentage_24h_in_currency'].get('usd', 0)
+    price_change_7d = coin_info['price_change_percentage_7d_in_currency'].get('usd', 0)
 
-    rank = coin_info["market_data"]["market_cap_rank"]
-    volume = coin_info["market_data"]["total_volume"]["usd"]
+    rank = coin_info["market_cap_rank"]
+    volume = coin_info["total_volume"]["usd"]
 
     message = f"📈 Price Update for {days}d 📈\n" \
-              f"  *{symbol} - {coin_info['name']} [Rank {rank}]*\n" \
+              f"  *{symbol} - Kaspa [Rank {rank}]*\n" \
               f"{'-' * 40}\n" \
-              f"Current price : \n      *{round(coin_info['market_data']['current_price']['usd'], 6):0.5f} USD*\n\n" \
+              f"Current price : \n      *{round(coin_info['current_price']['usd'], 6):0.5f} USD*\n\n" \
               f"```\n 1h {'▲' if price_change_1h > 0 else '▼'}  : {price_change_1h:.02f} %\n" \
               f"24h {'▲' if price_change_24h > 0 else '▼'}  : {price_change_24h:.02f} %\n" \
               f" 7d {'▲' if price_change_7d > 0 else '▼'}  : {price_change_7d:.02f} %\n" \
@@ -1046,16 +1052,14 @@ async def get_price_message(days):
     return message
 
 
-@cached(ttl=60)
+@cached(ttl=600)
 async def _get_kas_price():
     try:
+        print("checking new price")
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://api.coingecko.com/api/v3/simple/price",
-                                   params={"ids": "kaspa",
-                                           "vs_currencies": "usd"},
-                                   timeout=5) as resp:
+            async with session.get("https://api.kaspa.org/info/price") as resp:
                 if resp.status == 200:
-                    return (await resp.json())["kaspa"]["usd"]
+                    return (await resp.json())["price"]
                 else:
                     return 0
 
