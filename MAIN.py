@@ -462,6 +462,8 @@ async def wallet(e):
                                           f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
                                           '<b>Kaspa for desktop (KDX)</b>:\n'
                                           '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
+                                          '<b>Zelcore</b> 🆕:\n'
+                                          '  https://zelcore.io/\n'
                                           '<b>Chainge</b>:\n'
                                           '  https://www.chainge.finance/\n'
                                           '<b>Tangem COMING SOON</b>:\n'
