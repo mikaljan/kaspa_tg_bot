@@ -649,7 +649,7 @@ async def buy(e):
                            disable_web_page_preview=True)
 
 
-@bot.message_handler(commands=["miningpools"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["miningpools", "mining", "mp"], func=check_debounce(60 * 10))
 async def miningpools(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
@@ -666,6 +666,7 @@ async def miningpools(e):
                            f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
                            f"[P1 POOL](https://p1pool.com/)\n"
                            f"[KRYPTEX](https://pool.kryptex.com/en/kas)\n"
+                           f"[MAXGOR](https://kaspa.maxgor.info/)\n"
                            f"[HASHPOOL](https://hashpool.com/coins/KAS)\n\n"
                            f"[More](https://miningpoolstats.stream/kaspa)",
                            parse_mode="Markdown",
