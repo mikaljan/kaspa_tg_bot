@@ -462,12 +462,14 @@ async def wallet(e):
                                           f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
                                           '<b>Kaspa for desktop (KDX)</b>:\n'
                                           '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
-                                          '<b>Zelcore</b> 🆕:\n'
+                                          '<b>Zelcore</b>:\n'
                                           '  https://zelcore.io/\n'
                                           '<b>Chainge</b>:\n'
                                           '  https://www.chainge.finance/\n'
-                                          '<b>Tangem COMING SOON</b>:\n'
+                                          '<b>Tangem (iOS Testflight)</b>:\n'
                                           '  https://tangem.com/\n'
+                                          '<b>Paper wallet</b>\n'
+                                          '  <a href="https://github.com/svarogg/kaspaper/releases/tag/v0.0.3">github release</a>\n'
                                           '<b>Telegram wallet</b>:\n'
                                           '  Talk to @kaspanet_bot with <code>/create_wallet</code> command\n'
                                           '  This wallet is just for fun / demonstration.',
@@ -1124,6 +1126,7 @@ async def check_donations():
             logging.exception('Error checking donation address')
 
         await asyncio.sleep(5)
+        raise Exception("TEST")
 
 
 async def check_del_messages():
@@ -1257,30 +1260,10 @@ if __name__ == '__main__':
     import asyncio
 
 
-    # send the request to the server and retrive the response
-    # with KaspaInterface.kaspa_connection() as client:
-    # subscribe utxo change for donation address
-    # t1 = threading.Thread(target=check_tx_ids, daemon=False)
-    # t1.start()
-    #
-    # t2 = threading.Thread(target=check_donations, daemon=False)
-    # t2.start()
-    #
-    # t3 = threading.Thread(target=check_del_messages, daemon=False)
-    # t3.start()
-    #
-    # t4 = threading.Thread(target=check_exchange_pool, daemon=False)
-    # t4.start()
-
     async def run():
         await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(),
-                             bot.polling())
-        # while True:
-        #     try:
-        #         bot.polling(none_stop=True)
-        #     except Exception:
-        #         logging.exception("Something happenend")
-        #         time.sleep(10)
+                             bot.polling(),
+                             return_exceptions=True)
 
 
     asyncio.run(run())
