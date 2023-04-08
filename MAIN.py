@@ -690,6 +690,7 @@ async def links(e):
                            f" *Most important links*\n"
                            f"----------------------\n"
                            f"[Website](https://kaspa.org/)\n"
+                           f"[Discord](https://discord.gg/kaspa)\n"
                            f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
                            f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
                            f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
