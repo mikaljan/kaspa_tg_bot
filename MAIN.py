@@ -1306,7 +1306,7 @@ async def check_exchange_pool():
 @bot.message_handler(commands=["version"])
 async def version(e):
     await bot.send_message(e.chat.id,
-                           f"*Kaspa Teleram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
+                           f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
                            message_thread_id=e.chat.is_forum and e.message_thread_id,
                            parse_mode="Markdown")
 
