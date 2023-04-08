@@ -252,16 +252,19 @@ async def callback_query_hashrate_update(call):
 async def donate(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
-
-    await bot.send_message(e.chat.id,
-                           f"*Please consider a donation for my work on:\n"
-                           f"- Kaspa TelegramBot\n"
-                           f"- Block explorer https://explorer.kaspa.org\n"
-                           f"- REST-API https://api.kaspa.org\n"
-                           f"- Kaspacity https://kaspagames.org\n"
-                           f"- My support for users\n*"
-                           f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
-                           parse_mode="Markdown")
+    with open("./res/donate.png", "rb") as f:
+        await bot.send_photo(e.chat.id,
+                             f,
+                             f"Please consider a donation for my *free work* on:\n"
+                             f"🤖 Kaspa TelegramBot\n"
+                             f"🔎 Block explorer https://explorer.kaspa.org\n"
+                             f"💻 REST-API https://api.kaspa.org\n"
+                             f"🕹 Kaspacity https://kaspagames.org\n"
+                             f"🏋🏼‍♀️ My support for users\n\n"
+                             f"Either here `{os.environ['DONATION_ADDRESS']}`"
+                             f"\n or you can tip the bot directly via TG-wallet\n\n"
+                             f"*Thank you, this helps me a lot!* 💚",
+                             parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["announce"], func=chef_only)
@@ -1267,7 +1270,8 @@ if __name__ == '__main__':
 
     async def run():
         await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(),
-                              bot.polling(non_stop=True),
+                             bot.polling(non_stop=True),
                              return_exceptions=False)
+
 
     asyncio.run(run())
