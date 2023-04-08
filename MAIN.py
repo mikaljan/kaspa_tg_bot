@@ -1126,7 +1126,6 @@ async def check_donations():
             logging.exception('Error checking donation address')
 
         await asyncio.sleep(5)
-        raise Exception("TEST")
 
 
 async def check_del_messages():
@@ -1262,8 +1261,7 @@ if __name__ == '__main__':
 
     async def run():
         await asyncio.gather(check_tx_ids(), check_donations(), check_del_messages(),
-                             bot.polling(),
-                             return_exceptions=True)
-
+                              bot.polling(non_stop=True),
+                             return_exceptions=False)
 
     asyncio.run(run())
