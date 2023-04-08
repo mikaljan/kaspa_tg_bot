@@ -184,7 +184,7 @@ async def callback_query_price_update(call):
         try:
             message = await get_price_message(days)
         except Exception:
-            await bot.send_message(all.message.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
+            await bot.send_message(call.message.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
             logging.exception('Exception at price update')
             return
 
@@ -264,7 +264,8 @@ async def donate(e):
                              f"Either here `{os.environ['DONATION_ADDRESS']}`"
                              f"\n or you can tip the bot directly via TG-wallet\n\n"
                              f"*Thank you, this helps me a lot!* 💚",
-                             parse_mode="Markdown")
+                             parse_mode="Markdown",
+                             message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["announce"], func=chef_only)
@@ -274,7 +275,8 @@ async def announce(e):
             await bot.send_message(c_id,
                                    f"🚨 *Bot Announcement* 🚨\n"
                                    f"{text}",
-                                   parse_mode="Markdown")
+                                   parse_mode="Markdown",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["balance"], func=check_debounce(DEBOUNCE_SECS_PRICE))
@@ -286,19 +288,24 @@ async def balance(e):
         try:
             address = e.text.split(" ")[1]
         except IndexError:
-            await bot.send_message(e.chat.id, "Command needs kaspa wallet as parameter.")
+            await bot.send_message(e.chat.id,
+                                   "Command needs kaspa wallet as parameter.",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
             return
 
         if re.match(r"kaspa:[a-zA-Z0-9]{51}", address) is None:
-            await bot.send_message(e.chat.id, "kaspa wallet not valid.")
+            await bot.send_message(e.chat.id, "kaspa wallet not valid.",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
             return
 
         balance = (await kaspa_api.get_balance(address))["balance"] / 100000000
 
-        await bot.send_message(e.chat.id, f"\nBalance for\n"
-                                          f"  {address}\n"
-                                          f"{10 * '-'}\n"
-                                          f"{balance:,} KAS", parse_mode="Markdown")
+        await bot.send_message(e.chat.id,
+                               f"\nBalance for\n"
+                               f"  {address}\n"
+                               f"{10 * '-'}\n"
+                               f"{balance:,} KAS", parse_mode="Markdown",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
     except Exception as e:
         print(str(e))
 
@@ -323,7 +330,8 @@ async def devfund(e):
                                           f"    {round(balance_donation, 2):,} KAS\n"
                                           f"{30 * '-'}\n"
                                           f"{round(balance_mining, 2) + round(balance_donation, 2):,} KAS\n```",
-                               parse_mode="Markdown")
+                               parse_mode="Markdown",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
     except Exception as e:
         print(str(e))
 
@@ -350,7 +358,8 @@ async def coin_supply(e):
                                f"{'=' * 15}\n"
                                f"Max supply ~      : {total_supply:,.0f} KAS\n"
                                f"Percent mined       : {round(circulating_supply / total_supply * 100, 2)}%\n"
-                               f"```", parse_mode="Markdown")
+                               f"```", parse_mode="Markdown",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
     except Exception as e:
         print(str(e))
 
@@ -363,7 +372,8 @@ async def price(e):
     try:
         if e.chat.id == -1001589070884:
             await bot.send_message(e.chat.id,
-                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading',
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
         else:
             try:
                 try:
@@ -379,6 +389,7 @@ async def price(e):
                                              await get_image_stream(days),
                                              caption=msg,
                                              parse_mode="Markdown",
+                                             message_thread_id=e.chat.is_forum and e.message_thread_id,
                                              reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                                       callback_data="cb_update")]]))
                     except Exception:
@@ -386,10 +397,12 @@ async def price(e):
                         await bot.send_message(e.chat.id,
                                                msg,
                                                parse_mode="Markdown",
+                                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                                         callback_data="cb_update")]]))
                 except asyncio.exceptions.TimeoutError:
-                    await bot.send_message(e.chat.id, "Problems occured while requesting CoinGecko. Sorry.")
+                    await bot.send_message(e.chat.id, "Problems occured while requesting CoinGecko. Sorry.",
+                                           message_thread_id=e.chat.is_forum and e.message_thread_id)
             except Exception:
                 logging.exception(f'Raised exception')
     except Exception as e:
@@ -444,7 +457,8 @@ async def ath(e):
     try:
         if e.chat.id == -1001589070884:
             await bot.send_message(e.chat.id,
-                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading')
+                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading',
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
         else:
             try:
                 message = await get_ath_message("kas")
@@ -452,6 +466,7 @@ async def ath(e):
                 return
             if message:
                 await bot.send_message(e.chat.id, message,
+                                       message_thread_id=e.chat.is_forum and e.message_thread_id,
                                        parse_mode="Markdown")
     except Exception as e:
         print(str(e))
@@ -482,6 +497,7 @@ async def wallet(e):
                                           '  Talk to @kaspanet_bot with <code>/create_wallet</code> command\n'
                                           '  This wallet is just for fun / demonstration.',
                                parse_mode="html",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                disable_web_page_preview=True)
     except Exception as e:
         print(str(e))
@@ -514,14 +530,17 @@ async def mining_reward(e):
             await bot.send_message(e.chat.id,
                                    f"*Mining rewards for {match['dec']} {suffix[:2].upper()}/s*\n" + MINING_CALC(
                                        rewards),
-                                   parse_mode="Markdown")
+                                   parse_mode="Markdown",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
     except Exception:
         logging.exception('Exception at /mr')
 
 
 @bot.message_handler(commands=["id"])
 async def id(e):
-    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
+    await bot.send_message(e.chat.id,
+                           f"Chat-Id: {e.chat.id}",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["chart"])
@@ -532,6 +551,7 @@ async def chart(e):
     await bot.send_message(e.chat.id, f"See *KAS/USDT* chart on *MEXC*:\n"
                                       f"    https://www.tradingview.com/chart/?symbol=MEXC%3AKASUSDT\n",
                            parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
 
@@ -555,6 +575,7 @@ async def mcap(e):
                                f"Current Market Capitalization : {circ_supply * price_usd:>11,.0f} USD\n"
                                f"Fully Diluted Valuation (FDV) : {TOTAL_COIN_SUPPLY * price_usd:>11,.0f} USD"
                                f"\n```",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="Markdown")
     except Exception:
         logging.exception(f'Raised exception in mcap')
@@ -573,6 +594,7 @@ async def max_hashrate(e):
                                f"  *{max_hashrate['hashrate']:.2f} THs*\n\n"
                                f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
                                f"  Block {max_hashrate['blockheader']['hash'][:8]}",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="Markdown")
     except Exception:
         logging.exception(f'Raised exception in maxhash')
@@ -580,7 +602,7 @@ async def max_hashrate(e):
 
 @bot.message_handler(commands=["id"], func=check_only_private)
 async def id(e):
-    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}")
+    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}", message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
@@ -590,7 +612,10 @@ async def hashrate(e):
 
     try:
         hashrate = (await kaspa_api.get_hashrate())["hashrate"]
-        await bot.send_message(e.chat.id, f"Current Hashrate: *{hashrate:.02f} TH/s*", parse_mode="Markdown",
+        await bot.send_message(e.chat.id,
+                               f"Current Hashrate: *{hashrate:.02f} TH/s*",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
+                               parse_mode="Markdown",
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
                                                                                         callback_data="cb_update_hashrate")]]))
     except Exception as e:
@@ -614,7 +639,8 @@ async def buy(e):
                            f" *Exibitron* [https://www.exbitron.com/]\n"
                            f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                            parse_mode="Markdown",
-                           disable_web_page_preview=True)
+                           disable_web_page_preview=True,
+                           message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
@@ -656,6 +682,7 @@ async def buy(e):
                            f"🇻🇳 [https://t.me/Kaspa_VN](https://t.me/Kaspa_VN)\n"
                            f"🇷🇸 [https://t.me/kaspa_balkan](https://t.me/kaspa_balkan)",
                            parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
 
@@ -680,6 +707,7 @@ async def miningpools(e):
                            f"[HASHPOOL](https://hashpool.com/coins/KAS)\n\n"
                            f"[More](https://miningpoolstats.stream/kaspa)",
                            parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
 
@@ -699,6 +727,7 @@ async def links(e):
                            f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
                            f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
                            parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
     # telegram bot features
@@ -717,6 +746,7 @@ async def explorers(e):
                            f"[Kaspa Block Explorer](https://explorer.kaspa.org/)\n"
                            f"[KAS FYI](https://kas.fyi/)\n",
                            parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
     # telegram bot features
@@ -736,6 +766,7 @@ async def kaspa_qrcode(e):
     img_bytes = result["stream"]
     msg = await bot.send_photo(e.chat.id, photo=img_bytes,
                                caption=f'<b>{text}</b>',
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="html")
 
 
@@ -752,20 +783,24 @@ async def withdraw(e):
         print(ex)
         msg = await bot.send_message(e.chat.id, f"You do not have a wallet yet. "
                                                 f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61}", e.text)):
-        msg = await bot.send_message(e.chat.id, "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
+        msg = await bot.send_message(e.chat.id,
+                                     "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
     if not (amount := re.search(" (\d+([.,]\d+)?)( |$)(KAS)?", e.text, re.IGNORECASE)):
-        await bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS")
+        await bot.send_message(e.chat.id, "Valid amount (with unit) missing. Use syntax x.xx KAS",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
         return
     else:
         amount = float(amount[1].replace(",", "."))
@@ -777,9 +812,10 @@ async def withdraw(e):
                                to_address[0],
                                round(amount * 100000000),
                                e.chat.id,
-                               inclusiveFee=inclusive_fee_match is not None)
+                               inclusiveFee=inclusive_fee_match is not None,
+                               thread_id=e.chat.is_forum and e.message_thread_id)
     except tipping.WalletInsufficientBalanceError as ex:
-        await bot.send_message(e.chat.id, f"{ex}")
+        await bot.send_message(e.chat.id, f"{ex}", message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["telegram_wallet"])
@@ -796,6 +832,7 @@ async def tgwallet(e):
       <b>  /withdraw kaspa:... 1.23 KAS</b> - Withdraw KAS from your Telegram wallet to another address
       """
                            "\n\n♥ Please consider a donation for my free work to <code>kaspa:qqkqkzjvr7zwxxmjxjkmxxdwju9kjs6e9u82uh59z07vgaks6gg62v8707g73</code>. Thank you - Rob aka lAmeR",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            parse_mode="html")
 
 
@@ -812,6 +849,7 @@ async def send_kas(e):
     except Exception:
         msg = await bot.send_message(e.chat.id, f"You do not have a wallet yet. "
                                                 f"DM @kaspanet_bot with `/create_wallet` to create a new wallet.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
@@ -820,7 +858,7 @@ async def send_kas(e):
         return
 
     try:
-        # reply to a message?
+        assert not e.reply_to_message.content_type.startswith("forum")  # reply to a message?
         # recipient = e.reply_to_message.from_user.username
         recipient = f"{e.reply_to_message.from_user.id}"
         recipient_username = e.reply_to_message.from_user.username
@@ -832,6 +870,7 @@ async def send_kas(e):
         # except:
         msg = await bot.send_message(e.chat.id, "Could not determine a recipient!\n"
                                                 "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -847,6 +886,7 @@ async def send_kas(e):
         msg = await bot.send_message(e.chat.id,
                                      f"Recipient <b>{recipient_username or recipient}</b> does not have a wallet yet.\n"
                                      f"DM @kaspanet_bot with /create_wallet to create a new wallet.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -857,6 +897,7 @@ async def send_kas(e):
     except Exception:
         msg = await bot.send_message(e.chat.id, "Can't parse the amount.\n"
                                                 "Reply to someone's message and write:\n `/tip X.XX KAS`.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -864,6 +905,7 @@ async def send_kas(e):
 
     if amount < 0.00001:
         msg = await bot.send_message(e.chat.id, "Minimum amount is 0.00001 KAS",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="Markdown")
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 5, e.chat.id, e.message_id))
@@ -875,9 +917,11 @@ async def send_kas(e):
                                round(amount * 100000000),
                                e.chat.id,
                                recipient_username=recipient_username,
-                               sender_name=sender_name)
+                               sender_name=sender_name,
+                               thread_id=e.chat.is_forum and e.message_thread_id)
     except WalletInsufficientBalanceError:
-        await bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.")
+        await bot.send_message(e.chat.id, f"You don't have enough KAS to finish this transaction.",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["create_wallet"])
@@ -887,7 +931,8 @@ async def create_wallet(e):
 
     if e.chat.type != "private":
         msg = await bot.send_message(e.chat.id,
-                                     "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.")
+                                     "Please use a direct message (DM) to @kaspanet_bot to create a new wallet.",
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id)
 
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
@@ -910,17 +955,20 @@ async def create_wallet(e):
                                           f"\n\nPlease be advised that neither the dev nor any of the kaspa community is"
                                           f" responsible for any issues or losses that may occur with the use of this wallet."
                                           f" Use at your own risk.",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="html")
 
         try:
             await send_kas_and_log("xemofaucet", wallet["publicAddress"], 100000000, e.chat.id)
-            await bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.")
+            await bot.send_message(e.chat.id, "One Kaspa member gifted you 1 KAS for demo issues.",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id)
         except:
             logging.exception("Kaspa start tip didn't work.")
 
 
     except WalletCreationError:
-        await bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info")
+        await bot.send_message(e.chat.id, "Wallet already created. Use /wallet_info",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["kaspacity"])
@@ -943,7 +991,8 @@ Thanks to everyone who helped with the game.
 
 Have fun! 
 Rob 🚀 lAmeR
-''')
+''',
+                             message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["wallet_info", "wi"])
@@ -951,8 +1000,10 @@ async def check_wallet(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
 
-    user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json else f"{e.from_user.id}"
-    username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json else f"{e.from_user.username}"
+    user_id = f"{e.reply_to_message.from_user.id}" if "reply_to_message" in e.json and not e.reply_to_message.content_type.startswith(
+        "forum") else f"{e.from_user.id}"
+    username = f"{e.reply_to_message.from_user.username}" if "reply_to_message" in e.json and not e.reply_to_message.content_type.startswith(
+        "forum") else f"{e.from_user.username}"
 
     wallet = await get_wallet(username_to_uuid(f"{user_id}")
                               # ,get_wallet_pw(username)
@@ -991,11 +1042,13 @@ async def check_wallet(e):
                                            f'Balance:\n  <b>{wallet_balance} KAS</b>\n\n'
                                            f'Value:\n  <b>{float(wallet_balance or 0) * float(price):.02f} $</b>',
                                    parse_mode="html",
+                                   message_thread_id=e.chat.is_forum and e.message_thread_id,
                                    reply_markup=show_button)
 
     except WalletNotFoundError:
         msg = await bot.send_message(e.chat.id,
                                      f'No KAS wallet found. Use <code>/create_wallet</code> via DM to to @kaspanet_bot to create a wallet.',
+                                     message_thread_id=e.chat.is_forum and e.message_thread_id,
                                      parse_mode="html")
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, msg.id))
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, e.message_id))
@@ -1009,6 +1062,7 @@ def progress_bar(perc):
 async def send_kas_and_log(sender_username, to_address, amount, chat_id,
                            recipient_username=None,
                            inclusiveFee=False,
+                           thread_id=None,
                            sender_name=""):
     tx_id = await create_tx(username_to_uuid(sender_username),
                             get_wallet_pw(sender_username),
@@ -1033,6 +1087,7 @@ async def send_kas_and_log(sender_username, to_address, amount, chat_id,
                                      f"Block-ID\n"
                                      f"   ⏳ in progress",
                                      parse_mode="html",
+                                     reply_to_message_id=thread_id,
                                      disable_web_page_preview=True)
 
     TX_CHECKER[tx_id] = (time.time(), message)
@@ -1251,7 +1306,8 @@ async def check_exchange_pool():
 @bot.message_handler(commands=["version"])
 async def version(e):
     await bot.send_message(e.chat.id,
-                           f"*Kaspa Telegram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
+                           f"*Kaspa Teleram Bot version: {os.getenv('VERSION', 'x.x.x')}*",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
                            parse_mode="Markdown")
 
 
@@ -1261,6 +1317,7 @@ async def channels(e):
     if e.chat.id == 1922783296:
         await bot.send_message(e.chat.id,
                                f"{DONATION_CHANNELS}",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="Markdown")
 
 
