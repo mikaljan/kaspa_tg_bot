@@ -254,7 +254,12 @@ async def donate(e):
         add_donation_channel(e.chat.id)
 
     await bot.send_message(e.chat.id,
-                           f"*Please consider a donation for my work on:\n- Kaspa Bot\n- Block explorer\n- REST-API\n\n*"
+                           f"*Please consider a donation for my work on:\n"
+                           f"- Kaspa TelegramBot\n"
+                           f"- Block explorer https://explorer.kaspa.org\n"
+                           f"- REST-API https://api.kaspa.org\n"
+                           f"- Kaspacity https://kaspagames.org\n"
+                           f"- My support for users\n*"
                            f"`{os.environ['DONATION_ADDRESS']}`\n\n*Thank you!*",
                            parse_mode="Markdown")
 
