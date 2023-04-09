@@ -699,6 +699,7 @@ async def miningpools(e):
                            f"[ACC-POOL](https://kaspa.acc-pool.pw/)\n"
                            f"[KASPA-POOL](https://kaspa-pool.org/)\n"
                            f"[HEROMINERS](https://kaspa.herominers.com/)\n"
+                           f"[2MINERS](https://kas.2miners.com/)\n"
                            f"[KYIV KASPA POOL](https://kaspa.ixbase.info/)\n"
                            f"[WOOLYPOOLY](https://woolypooly.com/en/coin/kas)\n"
                            f"[P1 POOL](https://p1pool.com/)\n"
