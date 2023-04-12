@@ -589,9 +589,14 @@ async def max_hashrate(e):
     try:
         max_hashrate = await kaspa_api.get_max_hashrate()
 
+        if max_hashrate['hashrate'] < 1000:
+            hashrate_str = f"{max_hashrate['hashrate']:.2f} TH/s"
+        else:
+            hashrate_str = f"{max_hashrate['hashrate'] / 1000:.2f} PH/s"
+
         await bot.send_message(e.chat.id,
                                f"Max Kaspa Hashrate\n"
-                               f"  *{max_hashrate['hashrate']:.2f} THs*\n\n"
+                               f"  *{hashrate_str}*\n\n"
                                f"  Date {datetime.fromisoformat(max_hashrate['blockheader']['timestamp']):%Y-%m-%d %H:%M}\n"
                                f"  Block {max_hashrate['blockheader']['hash'][:8]}",
                                message_thread_id=e.chat.is_forum and e.message_thread_id,
@@ -612,8 +617,14 @@ async def hashrate(e):
 
     try:
         hashrate = (await kaspa_api.get_hashrate())["hashrate"]
+
+        if hashrate < 1000:
+            hashrate_str = f"{hashrate:.2f} TH/s"
+        else:
+            hashrate_str = f"{hashrate / 1000:.2f} PH/s"
+
         await bot.send_message(e.chat.id,
-                               f"Current Hashrate: *{hashrate:.02f} TH/s*",
+                               f"Current Hashrate: *{hashrate_str}*",
                                message_thread_id=e.chat.is_forum and e.message_thread_id,
                                parse_mode="Markdown",
                                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
