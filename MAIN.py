@@ -742,8 +742,7 @@ async def links(e):
                            f"[Discord](https://discord.gg/kaspa)\n"
                            f"[KGI BlockDAG visualizer](https://kgi.kaspad.net/)\n"
                            f"[Kaspa Wiki](https://kaspawiki.net/index.php/Main_Page)\n"
-                           f"[Kaspa Faucet](https://faucet.kaspanet.io/)\n"
-                           f"[Kaspa Grafana Board](http://kasboard-mainnet.kas.pa/)",
+                           f"[Kaspa Faucet](https://faucet.kaspanet.io/)",
                            parse_mode="Markdown",
                            message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
@@ -807,7 +806,7 @@ async def withdraw(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 3, e.chat.id, e.message_id))
         return
 
-    if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61}", e.text)):
+    if not (to_address := re.search(r"kaspa\:[a-zA-Z0-9]{61,63}", e.text)):
         msg = await bot.send_message(e.chat.id,
                                      "No valid *kaspa:* address found.\nUse /withdraw <kaspa:addr> <amount>",
                                      message_thread_id=e.chat.is_forum and e.message_thread_id,
