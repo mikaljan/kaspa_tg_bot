@@ -494,7 +494,7 @@ async def wallet(e):
                                           '  https://zelcore.io/\n'
                                           '<b>Chainge</b>:\n'
                                           '  https://www.chainge.finance/\n'
-                                          '<b>Tangem (iOS Testflight)</b>:\n'
+                                          '<b>Tangem 🆕</b>:\n'
                                           '  https://tangem.com/\n'
                                           '<b>Paper wallet</b>\n'
                                           '  <a href="https://github.com/svarogg/kaspaper/releases/tag/v0.0.3">github release</a>\n'
@@ -652,7 +652,7 @@ async def buy(e):
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Txbit* [https://txbit.io/]\n"
                            f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
-                           f" *Exibitron* [https://www.exbitron.com/]\n"
+                           # f" *Exibitron* [https://www.exbitron.com/]\n"
                            f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                            parse_mode="Markdown",
                            disable_web_page_preview=True,
