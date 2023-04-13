@@ -224,13 +224,18 @@ async def callback_query_hashrate_update(call):
     try:
         try:
             hashrate = (await kaspa_api.get_hashrate())["hashrate"]
+
+            if hashrate < 1000:
+                hashrate_str = f"{hashrate:.2f} TH/s"
+            else:
+                hashrate_str = f"{hashrate / 1000:.2f} PH/s"
         except Exception as e:
             print(str(e))
             return
 
         try:
             if f"{hashrate:0.2f}" not in call.message.text:
-                await bot.edit_message_text(f"Current Hashrate: *{hashrate:0.2f} TH/s*", call.message.chat.id,
+                await bot.edit_message_text(f"Current Hashrate: *{hashrate_str}*", call.message.chat.id,
                                             call.message.id,
                                             parse_mode="Markdown",
                                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Update",
