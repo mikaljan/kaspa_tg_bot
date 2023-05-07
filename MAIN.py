@@ -646,8 +646,9 @@ async def buy(e):
     await bot.send_message(e.chat.id,
                            f"    💰   *Exchanges*   💰\n"
                            f"----------------------------------\n"
-                           f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
+                           f" *KuCoin* [https://kucoin.com/]/(https://www.kucoin.com/de/trade/KAS-USDT)\n"
                            f" *Gate* [https://www.gate.io/de/trade/KAS_USDT]\n"
+                           f" *MEXC Global* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                            f" *Hotbit* [https://www.hotbit.io/](https://www.hotbit.io/exchange?symbol=KAS_USDT)\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Txbit* [https://txbit.io/]\n"
