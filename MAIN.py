@@ -510,7 +510,7 @@ async def wallet(e):
         print(str(e))
 
 
-@bot.message_handler(commands=["mining_reward", "mr"], func=ignore_channels(["-1001589070884"]))
+@bot.message_handler(commands=["mining_reward", "mr"], func=ignore_channels(["-1001589070884", "-1001493667078"]))
 async def mining_reward(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
