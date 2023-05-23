@@ -649,7 +649,7 @@ async def buy(e):
                            f"    💰   *Exchanges*   💰\n"
                            f"----------------------------------\n"
                            f" *KuCoin* [https://kucoin.com/](https://www.kucoin.com/de/trade/KAS-USDT)\n"
-                           f" *Gate* [https://www.gate.io/de/trade/KAS_USDT]\n"
+                           f" *Gate* [https://www.gate.io/](https://www.gate.io/de/trade/KAS_USDT)\n"
                            f" *Bitget* [https://www.bitget.com/](https://www.bitget.com/en/spot/KASUSDT_SPBL)\n"
                            f" *Uphold* [https://uphold.com/](https://uphold.com/prices/crypto/kaspa)\n"
                            f" *LBank* [https://lbank.com](https://www.lbank.com/trade/kas_usdt/)\n"
