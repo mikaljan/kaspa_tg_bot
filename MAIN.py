@@ -768,7 +768,7 @@ async def explorers(e):
                            f"----------------------\n"
                            f"[Katnip Explorer](https://katnip.kaspad.net/)\n"
                            f"[Kaspa Block Explorer](https://explorer.kaspa.org/)\n"
-                           f"[KAS FYI](https://kas.fyi/)\n",
+                           f"[kas fyi](https://kas.fyi/)\n",
                            parse_mode="Markdown",
                            message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
