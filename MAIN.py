@@ -377,7 +377,8 @@ async def price(e):
     try:
         if e.chat.id == -1001589070884:
             await bot.send_message(e.chat.id,
-                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading',
+                                   f'💰 For price talks please use the price channel 💰\n\n'
+                                   f'https://t.me/Kaspa_SFW_PriceGroup',
                                    message_thread_id=e.chat.is_forum and e.message_thread_id)
         else:
             try:
@@ -462,7 +463,8 @@ async def ath(e):
     try:
         if e.chat.id == -1001589070884:
             await bot.send_message(e.chat.id,
-                                   f'💰 For price talks please use the price channel 💰\n\nhttps://t.me/KaspaTrading',
+                                   f'💰 For price talks please use the price channel 💰\n\n'
+                                   f'https://t.me/Kaspa_SFW_PriceGroup',
                                    message_thread_id=e.chat.is_forum and e.message_thread_id)
         else:
             try:
