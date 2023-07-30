@@ -41,6 +41,8 @@ DEBOUNCE_CACHE = {}
 TX_CHECKER = {}
 DELETE_MESSAGES_CACHE = []
 
+STARTED = datetime.now()
+
 bot = AsyncTeleBot(os.environ["TELEBOT_TOKEN"])
 syncbot = TeleBot(os.environ["TELEBOT_TOKEN"])
 
@@ -286,7 +288,7 @@ async def mcapof(e):
                                f"*{data['symbol'].upper()} - {data['name']}*\n"
                                f"  price: {other_price}$\n"
                                f"  MCAP: $ {other_mcap / 1_000_000:0,.2f}M\n\n"
-                               f"*New KAS price\n  {multiplicated_price:0.3f}$ ({multiplicator:.2f} x)*",
+                               f"*Determined KAS price\n  {multiplicated_price:0.3f}$ ({multiplicator:.2f} x)*",
                                parse_mode="Markdown",
                                message_thread_id=e.chat.is_forum and e.message_thread_id)
 
@@ -420,6 +422,22 @@ async def coin_supply(e):
                                message_thread_id=e.chat.is_forum and e.message_thread_id)
     except Exception as e:
         print(str(e))
+
+
+def strfdelta(tdelta, fmt):
+    d = {"days": tdelta.days}
+    d["hours"], rem = divmod(tdelta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return fmt.format(**d)
+
+
+@bot.message_handler(commands=["uptime"], func=check_debounce(10))
+async def uptime(e):
+    await bot.send_message(e.chat.id,
+                           f'🕐 *Bot uptime* 🕐\n'
+                           f'  {strfdelta(datetime.now() - STARTED, "{days} days {hours} hours {minutes} minute")}s',
+                           parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["price"], func=check_debounce(DEBOUNCE_SECS_PRICE))

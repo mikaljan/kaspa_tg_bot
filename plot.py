@@ -54,11 +54,8 @@ async def request_market_chart(days=1):
 
 async def get_coin_info_from_ticker(symbol):
     symbol = symbol.lower()
-    print(symbol)
     filtered_coins = [x for x in COINS if x["symbol"].lower() == symbol] or \
                      [x for x in COINS if x["name"].lower() == symbol]
-
-    print(symbol)
 
     if not filtered_coins:
         return
