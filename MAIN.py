@@ -10,6 +10,7 @@ from datetime import datetime
 
 import aiohttp
 import qrcode
+import requests
 from PIL import Image
 from aiocache import cached
 from qrcode.image.styledpil import StyledPilImage
@@ -24,7 +25,7 @@ import kaspa_api
 import tipping
 from constants import TOTAL_COIN_SUPPLY, DEV_MINING_ADDR, DEV_DONATION_ADDR, DEBOUNCE_SECS_PRICE
 from helper import hashrate_to_int, percent_of_network, get_mining_rewards, MINING_CALC
-from plot import get_image_stream
+from plot import get_image_stream, get_coin_info_from_ticker
 from tipping import create_new_wallet, WalletCreationError, get_wallet, WalletNotFoundError, username_to_uuid, \
     get_wallet_pw, create_tx, WalletInsufficientBalanceError
 
@@ -260,6 +261,49 @@ async def callback_query_hashrate_update(call):
         logging.exception('Exception at hashrate update')
     except Exception:
         logging.exception('Exception at hashrate update')
+
+
+@bot.message_handler(commands=["mcapof"], func=check_debounce(20))
+async def mcapof(e):
+    try:
+        other_currency = e.text.split(" ")[1]
+        data = await get_coin_info_from_ticker(other_currency)
+
+        other_price = data["market_data"]["current_price"]["usd"]
+        other_mcap = data["market_data"]["market_cap"]["usd"]
+
+        kaspa_info = await get_coin_info()
+        kas_price = kaspa_info["current_price"]["usd"]
+        kas_mcap = kaspa_info["market_cap"]["usd"]
+
+        multiplicator = other_mcap / kas_mcap
+        multiplicated_price = kas_price * multiplicator
+
+        await bot.send_message(e.chat.id,
+                               f"*KAS - Kaspa*\n"
+                               f"  price: {kas_price:0.3f}$\n"
+                               f"  MCAP: $ {kas_mcap / 1_000_000:0,.2f}M\n\nwith the *MCAP of*\n\n"
+                               f"*{data['symbol'].upper()} - {data['name']}*\n"
+                               f"  price: {other_price}$\n"
+                               f"  MCAP: $ {other_mcap / 1_000_000:0,.2f}M\n\n"
+                               f"*New KAS price\n  {multiplicated_price:0.3f}$ ({multiplicator:.2f} x)*",
+                               parse_mode="Markdown",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id)
+
+    except Exception:
+        logging.exception('Something went wrong....')
+
+
+@bot.message_handler(commands=["fgi"])
+async def fgi(e):
+    fgindex = requests.get("https://api.alternative.me/fng/").json()
+    resp = requests.get("https://alternative.me/crypto/fear-and-greed-index.png")
+
+    await bot.send_photo(e.chat.id,
+                         resp.content,
+                         f'Fear & Greed Index:\n   {fgindex["data"][0]["value"]} '
+                         f'= {fgindex["data"][0]["value_classification"]}',
+                         message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["donate"], func=check_debounce(DEBOUNCE_SECS_PRICE))
@@ -619,11 +663,10 @@ async def value(e):
         price = await _get_kas_price()
 
         await bot.send_message(e.chat.id,
-                       f"{value:0,.2f} {'USD' if usd_to_kas else 'KAS'} ≈ "
-                       f"*{value / price if usd_to_kas else (value * price):0,.2f} {'USD' if not usd_to_kas else 'KAS'}*\n",
-                       message_thread_id=e.chat.is_forum and e.message_thread_id,
-                       parse_mode="Markdown")
-
+                               f"{value:0,.2f} {'USD' if usd_to_kas else 'KAS'} ≈ "
+                               f"*{value / price if usd_to_kas else (value * price):0,.2f} {'USD' if not usd_to_kas else 'KAS'}*\n",
+                               message_thread_id=e.chat.is_forum and e.message_thread_id,
+                               parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
@@ -652,7 +695,8 @@ async def max_hashrate(e):
 
 @bot.message_handler(commands=["id"], func=check_only_private)
 async def id(e):
-    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}", message_thread_id=e.chat.is_forum and e.message_thread_id)
+    await bot.send_message(e.chat.id, f"Chat-Id: {e.chat.id}",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
 @bot.message_handler(commands=["hashrate"], func=check_debounce(60 * 60))
@@ -1126,21 +1170,21 @@ async def pool(e):
         pool_balance = (await kaspa_api.get_balance(pool_addr))["balance"] / 100000000 * (await _get_kas_price())
 
         await bot.send_message(e.chat.id,
-                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
-                         f"----------------------\n"
-                         f"""Kaspa has a great opportunity to be listed on a Tier-1 Exchange (Top 5)! Through negotiations we were presented a very attractive proposal with a listing fee of just $30K total in Kaspa
+                               f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
+                               f"----------------------\n"
+                               f"""Kaspa has a great opportunity to be listed on a Tier-1 Exchange (Top 5)! Through negotiations we were presented a very attractive proposal with a listing fee of just $30K total in Kaspa
 The funding period will end on Wednesday August 2nd.
 
 This funding pool is to raise $30K Kaspa that will be used for exchange marketing campaign.\n\n"""
-                         f" KAS balance: *{round(pool_balance):,.0f} USD*\n"
-                         f" USDT balance: ~ *{usdt} USD*\n"
-                         f"----------------------\n"
-                         f" TOTAL: *{round(pool_balance) + usdt:,.0f} USD\n"
-                         f"      of needed 30,000 USD*\n\n"
-                         f"*{(pool_balance + usdt) / 30000  * 100:.02f}% done.*\n"
-                         f"{progress_bar((pool_balance + usdt) / 30000 * 100)}\n\n",
-                         parse_mode="Markdown",
-                         disable_web_page_preview=True)
+                               f" KAS balance: *{round(pool_balance):,.0f} USD*\n"
+                               f" USDT balance: ~ *{usdt} USD*\n"
+                               f"----------------------\n"
+                               f" TOTAL: *{round(pool_balance) + usdt:,.0f} USD\n"
+                               f"      of needed 30,000 USD*\n\n"
+                               f"*{(pool_balance + usdt) / 30000 * 100:.02f}% done.*\n"
+                               f"{progress_bar((pool_balance + usdt) / 30000 * 100)}\n\n",
+                               parse_mode="Markdown",
+                               disable_web_page_preview=True)
     except Exception:
         logging.exception('Exception requesting pool info')
 

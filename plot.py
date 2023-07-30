@@ -7,10 +7,12 @@ from datetime import datetime
 import aiohttp
 import pandas
 import plotly.express as px
+import requests
 from aiocache import cached
 from aiohttp import ContentTypeError
 
 STARTUP_DEBOUNCE = True
+COINS = requests.get("https://api.coingecko.com/api/v3/coins/list").json()
 
 
 def stop_debounce():
@@ -48,6 +50,30 @@ async def request_market_chart(days=1):
                     logging.exception('Error reading market chart.')
                     raise
     return CACHE
+
+
+async def get_coin_info_from_ticker(symbol):
+    symbol = symbol.lower()
+    print(symbol)
+    filtered_coins = [x for x in COINS if x["symbol"].lower() == symbol] or \
+                     [x for x in COINS if x["name"].lower() == symbol]
+
+    print(symbol)
+
+    if not filtered_coins:
+        return
+
+    coin_list = []
+    for coin in filtered_coins:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://api.coingecko.com/api/v3/coins/{coin['id']}",
+                                   params={"tickers": "false",
+                                           "community_data": "false",
+                                           "developer_data": "false"},
+                                   timeout=10) as resp:
+                coin_list.append(await resp.json())
+
+    return sorted(coin_list, key=lambda x: (x['coingecko_rank'] or 999999))[0]
 
 
 async def get_image_stream(days=1):
