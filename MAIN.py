@@ -590,6 +590,33 @@ async def mcap(e):
         logging.exception(f'Raised exception in mcap')
 
 
+@bot.message_handler(commands=["wkas"], func=check_debounce(60 * 60))
+async def wkas(e):
+    await bot.send_message(e.chat.id,
+                           f"The Ethereum *contract* for *wKAS* is:\n"
+                           f"  `0x112b08621e27e10773ec95d250604a041f36c582`\n"
+                           f"See [etherscan.io](https://etherscan.io/address/0x112b08621e27e10773ec95d250604a041f36c582)",
+                           disable_web_page_preview=True,
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
+                           parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["value"], func=check_debounce(60 * 60))
+async def value(e):
+    usd_to_kas = "usd" in e.text.lower() or "$" in e.text
+
+    if value := re.search(r"\d+(\.\d+)?", e.text.replace(",", "")):
+        value = float(value[0])
+        price = await _get_kas_price()
+
+        await bot.send_message(e.chat.id,
+                       f"{value:0,.2f} {'USD' if usd_to_kas else 'KAS'} ≈ "
+                       f"*{value / price if usd_to_kas else (value * price):0,.2f} {'USD' if not usd_to_kas else 'KAS'}*\n",
+                       message_thread_id=e.chat.is_forum and e.message_thread_id,
+                       parse_mode="Markdown")
+
+
+
 @bot.message_handler(commands=["maxhash"], func=check_debounce(60 * 60))
 async def max_hashrate(e):
     if e.chat.type != "private":
