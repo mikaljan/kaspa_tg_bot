@@ -17,6 +17,7 @@ from qrcode.image.styles.colormasks import HorizontalGradiantColorMask
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
 from telebot.apihelper import ApiTelegramException
 from telebot.async_telebot import AsyncTeleBot
+from telebot import TeleBot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 
 import kaspa_api
@@ -40,6 +41,7 @@ TX_CHECKER = {}
 DELETE_MESSAGES_CACHE = []
 
 bot = AsyncTeleBot(os.environ["TELEBOT_TOKEN"])
+syncbot = TeleBot(os.environ["TELEBOT_TOKEN"])
 
 assert os.environ.get('DONATION_ADDRESS') is not None
 
@@ -94,13 +96,20 @@ def check_debounce(seconds=60 * 60):
     def wrapper(*args, **kwargs):
         cmd_id = f'{args[0].chat.id}{args[0].text.split("@")[0]}'
 
+        requester_status = syncbot.get_chat_member(args[0].chat.id, args[0].from_user.id).status
+
         try:
             is_rob = (args[0].from_user.id == 1922783296)
         except AttributeError:
             is_rob = False
 
+        try:
+            is_admin = requester_status in ['administrator', 'creator']
+        except:
+            is_admin = False
+
         if time_passed := (time.time() - DEBOUNCE_CACHE.get(cmd_id, 0)) > seconds \
-                          or args[0].chat.id == -1001208691907 or is_rob:
+                          or args[0].chat.id == -1001208691907 or is_rob or is_admin:
             DEBOUNCE_CACHE[cmd_id] = time.time()
         else:
             try:
