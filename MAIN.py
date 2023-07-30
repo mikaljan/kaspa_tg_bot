@@ -658,7 +658,7 @@ async def buy(e):
                            f" *MEXC* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Txbit* [https://txbit.io/]\n"
-                           f" *Bitpanda* [https://www.bitpanda.com/en/prices/kaspa-kas]\n"
+                           f" *Bitpanda* [https://www.bitpanda.com/](https://www.bitpanda.com/en/prices/kaspa-kas)\n"
                            f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
                            # f" *Exibitron* [https://www.exbitron.com/]\n"
                            f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
@@ -1081,6 +1081,34 @@ async def check_wallet(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, e.message_id))
 
 
+@bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
+async def pool(e):
+    try:
+        usdt = 8000
+        # kas_needed = round((30000 - usdt) / (await _get_kas_price()))
+        pool_addr = "kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d"
+        pool_balance = (await kaspa_api.get_balance(pool_addr))["balance"] / 100000000 * (await _get_kas_price())
+
+        await bot.send_message(e.chat.id,
+                         f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
+                         f"----------------------\n"
+                         f"""Kaspa has a great opportunity to be listed on a Tier-1 Exchange (Top 5)! Through negotiations we were presented a very attractive proposal with a listing fee of just $30K total in Kaspa
+The funding period will end on Wednesday August 2nd.
+
+This funding pool is to raise $30K Kaspa that will be used for exchange marketing campaign.\n\n"""
+                         f" KAS balance: *{round(pool_balance):,.0f} USD*\n"
+                         f" USDT balance: ~ *{usdt} USD*\n"
+                         f"----------------------\n"
+                         f" TOTAL: *{round(pool_balance) + usdt:,.0f} USD\n"
+                         f"      of needed 30,000 USD*\n\n"
+                         f"*{(pool_balance + usdt) / 30000  * 100:.02f}% done.*\n"
+                         f"{progress_bar((pool_balance + usdt) / 30000 * 100)}\n\n",
+                         parse_mode="Markdown",
+                         disable_web_page_preview=True)
+    except Exception:
+        logging.exception('Exception requesting pool info')
+
+
 def progress_bar(perc):
     green_boxes = math.floor(perc / 100 * 8)
     return green_boxes * "🟩" + "⬜" * (8 - green_boxes)
@@ -1308,7 +1336,7 @@ async def check_tx_ids():
 async def check_exchange_pool():
     donation_announced = 0
     while True:
-        donation_addr = "kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z"
+        donation_addr = "kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d"
         try:
             donation_balance = (await kaspa_api.get_balance(donation_addr))["balance"] / 100000000
         except Exception:
@@ -1320,7 +1348,7 @@ async def check_exchange_pool():
                 if donation_balance - donation_announced >= 5000:
                     for c_id in DONATION_CHANNELS:
                         await bot.send_message(c_id,  # -1001589070884,
-                                               f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qpx4nyz06zk7j5mvfk98w69ayzt3g0j46c0qr4hkya509e9e69dn65h9q8n9z)\n"
+                                               f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
                                                f" We received a new donation of\n\n"
                                                f" *{donation_balance - donation_announced:,.0f} KAS* for the new exchange"
                                                f"\n\n♥♥♥",
