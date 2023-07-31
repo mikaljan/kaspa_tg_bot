@@ -661,7 +661,7 @@ async def mcap(e):
         logging.exception(f'Raised exception in mcap')
 
 
-@bot.message_handler(commands=["wkas"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["wkas", "ca"], func=check_debounce(60 * 60))
 async def wkas(e):
     await bot.send_message(e.chat.id,
                            f"The Ethereum *contract* for *wKAS* is:\n"
