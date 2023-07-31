@@ -1182,7 +1182,7 @@ async def check_wallet(e):
 @bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
 async def pool(e):
     try:
-        usdt = 8000
+        usdt = 13000
         # kas_needed = round((30000 - usdt) / (await _get_kas_price()))
         pool_addr = "kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d"
         pool_balance = (await kaspa_api.get_balance(pool_addr))["balance"] / 100000000 * (await _get_kas_price())
