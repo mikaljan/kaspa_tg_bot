@@ -1179,32 +1179,32 @@ async def check_wallet(e):
         DELETE_MESSAGES_CACHE.append((time.time() + 180, e.chat.id, e.message_id))
 
 
-@bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
-async def pool(e):
-    try:
-        usdt = 13000
-        # kas_needed = round((30000 - usdt) / (await _get_kas_price()))
-        pool_addr = "kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d"
-        pool_balance = (await kaspa_api.get_balance(pool_addr))["balance"] / 100000000 * (await _get_kas_price())
-
-        await bot.send_message(e.chat.id,
-                               f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
-                               f"----------------------\n"
-                               f"""Kaspa has a great opportunity to be listed on a Tier-1 Exchange (Top 5)! Through negotiations we were presented a very attractive proposal with a listing fee of just $30K total in Kaspa
-The funding period will end on Wednesday August 2nd.
-
-This funding pool is to raise $30K Kaspa that will be used for exchange marketing campaign.\n\n"""
-                               f" KAS balance: *{round(pool_balance):,.0f} USD*\n"
-                               f" USDT balance: ~ *{usdt} USD*\n"
-                               f"----------------------\n"
-                               f" TOTAL: *{round(pool_balance) + usdt:,.0f} USD\n"
-                               f"      of needed 30,000 USD*\n\n"
-                               f"*{(pool_balance + usdt) / 30000 * 100:.02f}% done.*\n"
-                               f"{progress_bar((pool_balance + usdt) / 30000 * 100)}\n\n",
-                               parse_mode="Markdown",
-                               disable_web_page_preview=True)
-    except Exception:
-        logging.exception('Exception requesting pool info')
+# @bot.message_handler(commands=["pool", "listingpool"], func=check_debounce(60 * 10))
+# async def pool(e):
+#     try:
+#         usdt = 13000
+#         # kas_needed = round((30000 - usdt) / (await _get_kas_price()))
+#         pool_addr = "kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d"
+#         pool_balance = (await kaspa_api.get_balance(pool_addr))["balance"] / 100000000 * (await _get_kas_price())
+#
+#         await bot.send_message(e.chat.id,
+#                                f"[Exchange funding pool](https://explorer.kaspa.org/addresses/kaspa:qzgranawalr2apfz2pzq7rle20gnw37u0yfqew3nsm0acsanf0mjcehzgqc5d)\n"
+#                                f"----------------------\n"
+#                                f"""Kaspa has a great opportunity to be listed on a Tier-1 Exchange (Top 5)! Through negotiations we were presented a very attractive proposal with a listing fee of just $30K total in Kaspa
+# The funding period will end on Wednesday August 2nd.
+#
+# This funding pool is to raise $30K Kaspa that will be used for exchange marketing campaign.\n\n"""
+#                                f" KAS balance: *{round(pool_balance):,.0f} USD*\n"
+#                                f" USDT balance: ~ *{usdt} USD*\n"
+#                                f"----------------------\n"
+#                                f" TOTAL: *{round(pool_balance) + usdt:,.0f} USD\n"
+#                                f"      of needed 30,000 USD*\n\n"
+#                                f"*{(pool_balance + usdt) / 30000 * 100:.02f}% done.*\n"
+#                                f"{progress_bar((pool_balance + usdt) / 30000 * 100)}\n\n",
+#                                parse_mode="Markdown",
+#                                disable_web_page_preview=True)
+#     except Exception:
+#         logging.exception('Exception requesting pool info')
 
 
 def progress_bar(perc):
