@@ -1148,21 +1148,21 @@ async def check_wallet(e):
             wallet_balance = wallet_balance.rstrip("0")
             wallet_balance = wallet_balance.rstrip(".")
 
-        print("Starting")
-        result = {}
-        t1 = threading.Thread(target=create_qr_code_img, args=[wallet["publicAddress"], False, result])
-        t1.start()
-        while True:
-            await asyncio.sleep(0.3)
-            if not t1.is_alive():
-                break
+        # print("Starting")
+        # result = {}
+        # t1 = threading.Thread(target=create_qr_code_img, args=[wallet["publicAddress"], False, result])
+        # t1.start()
+        # while True:
+        #     await asyncio.sleep(0.3)
+        #     if not t1.is_alive():
+        #         break
 
-        img_bytes = result["stream"]
+        # img_bytes = result["stream"]
 
         price = await _get_kas_price()
 
-        msg = await bot.send_photo(e.chat.id, photo=img_bytes,
-                                   caption=f'@{username} telegram wallet is:\n'
+        msg = await bot.send_message(e.chat.id,
+                                   f'@{username} telegram wallet is:\n'
                                            f'<code>{wallet["publicAddress"]}</code>\n'
                                            f'Balance:\n  <b>{wallet_balance} KAS</b>\n\n'
                                            f'Value:\n  <b>{float(wallet_balance or 0) * float(price):.02f} $</b>',
