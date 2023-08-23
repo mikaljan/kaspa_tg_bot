@@ -756,6 +756,8 @@ async def buy(e):
                            f" *MEXC* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Bitpanda* [https://www.bitpanda.com/](https://www.bitpanda.com/en/prices/kaspa-kas)\n"
+                           f" *changeNOW* [https://www.changenow.io/](https://changenow.io/?from=btc&to=kas)\n"
+                           f" *CoinStash* [https://www.coinstash.com.au/](https://coinstash.com.au/kas/buy)\n"
                            f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
                            # f" *Exibitron* [https://www.exbitron.com/]\n"
                            f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
@@ -764,7 +766,7 @@ async def buy(e):
                            message_thread_id=e.chat.is_forum and e.message_thread_id)
 
 
-@bot.message_handler(commands=["languages"], func=check_debounce(60 * 10))
+@bot.message_handler(commands=["languages", "international"], func=check_debounce(60 * 10))
 async def buy(e):
     if e.chat.type != "private":
         add_donation_channel(e.chat.id)
