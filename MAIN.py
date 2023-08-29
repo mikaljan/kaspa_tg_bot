@@ -672,7 +672,7 @@ async def wkas(e):
                            parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["value"], func=check_debounce(60 * 60))
+@bot.message_handler(commands=["value"], func=ignore_channels(["-1001589070884", "-1001493667078"]))
 async def value(e):
     usd_to_kas = "usd" in e.text.lower() or "$" in e.text
 
