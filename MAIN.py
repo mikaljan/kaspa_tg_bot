@@ -787,6 +787,7 @@ async def buy(e):
                            f"🇧🇩 [https://t.me/kaspa_bangladesh](https://t.me/kaspa_bangladesh)\n"
                            f"🇧🇪 [https://t.me/KaspaBelgium](https://t.me/KaspaBelgium)\n"
                            f"🇨🇳 [https://t.me/kaspa_chinese](https://t.me/kaspa_chinese)\n"
+                           f"🇨🇳 [https://t.me/kaspa_chinese_group](https://t.me/kaspa_chinese_group)\n"
                            f"🇸🇰🇨🇿 [https://t.me/KaspaSKCZ](https://t.me/KaspaSKCZ)\n"
                            f"🇩🇪 [https://t.me/KaspaGerman](https://t.me/KaspaGerman)\n"
                            f"🇪🇸 [https://t.me/kaspaesp](https://t.me/kaspaesp)\n"
