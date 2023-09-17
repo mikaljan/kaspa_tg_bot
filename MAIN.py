@@ -861,6 +861,17 @@ async def links(e):
                            message_thread_id=e.chat.is_forum and e.message_thread_id,
                            disable_web_page_preview=True)
 
+@bot.message_handler(commands=["website"], func=check_debounce(60 * 10))
+async def website(e):
+    await bot.send_message(e.chat.id,
+                           f"----------------------\n"
+                           f" *Kaspa website*\n"
+                           f"----------------------\n"
+                           f"https://kaspa.org/\n",
+                           parse_mode="Markdown",
+                           message_thread_id=e.chat.is_forum and e.message_thread_id,
+                           disable_web_page_preview=True)
+
     # telegram bot features
 
 
