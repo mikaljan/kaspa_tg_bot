@@ -563,14 +563,16 @@ async def wallet(e):
                                           f'  <a href="tinyurl.com/ym8sbas7">go to github</a>\n'
                                           '<b>Kaspa for desktop (KDX)</b>:\n'
                                           '  <a href="https://kdx.app/">https://kdx.app/</a>\n'
+                                          '<b>Tangem</b>:\n'
+                                          '  https://tangem.com/\n'
+                                          '<b>OneKey</b>:\n'
+                                          '  https://onekey.so/\n'
+                                          '<b>Kaspium 🆕</b>:\n'
+                                          'https://kaspa.org/kaspium-v1-0-1-release/\n'
                                           '<b>Zelcore</b>:\n'
                                           '  https://zelcore.io/\n'
                                           '<b>Chainge</b>:\n'
                                           '  https://www.chainge.finance/\n'
-                                          '<b>Tangem</b>:\n'
-                                          '  https://tangem.com/\n'
-                                          '<b>OneKey 🆕</b>:\n'
-                                          '  https://onekey.so/\n'
                                           '<b>Paper wallet</b>\n'
                                           '  <a href="https://github.com/svarogg/kaspaper/releases/tag/v0.0.3">github release</a>\n'
                                           '<b>Telegram wallet</b>:\n'
@@ -755,6 +757,7 @@ async def buy(e):
                            f" *Uphold* [https://uphold.com/](https://uphold.com/prices/crypto/kaspa)\n"
                            f" *LBank* [https://lbank.com](https://www.lbank.com/trade/kas_usdt/)\n"
                            f" *MEXC* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
+                           f" *BTSE* [https://www.btse.com/]\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Bitmart* [https://www.bitmart.com/](https://www.bitmart.com/trade/en-US?symbol=KAS_USDT)\n"
                            f" *Bitpanda* [https://www.bitpanda.com/](https://www.bitpanda.com/en/prices/kaspa-kas)\n"
@@ -765,7 +768,7 @@ async def buy(e):
                            f" *CoinStash* [https://www.coinstash.com.au/](https://coinstash.com.au/kas/buy)\n"
                            f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
                            # f" *Exibitron* [https://www.exbitron.com/]\n"
-                           f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
+                           # f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                            parse_mode="Markdown",
                            disable_web_page_preview=True,
                            message_thread_id=e.chat.is_forum and e.message_thread_id)
