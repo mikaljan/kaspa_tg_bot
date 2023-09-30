@@ -766,7 +766,7 @@ async def buy(e):
                            f" *BingX* [https://bingx.com/](https://bingx.com/en-us/spot/KASUSDT/)\n"
                            f" *changeNOW* [https://www.changenow.io/](https://changenow.io/?from=btc&to=kas)\n"
                            f" *CoinStash* [https://www.coinstash.com.au/](https://coinstash.com.au/kas/buy)\n"
-                           f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n"
+                           f" *Chainge (DEX)* [https://www.chainge.finance/](https://www.chainge.finance/info/currencies/KAS)\n",
                            # f" *Exibitron* [https://www.exbitron.com/]\n"
                            # f" *TradeOgre* [https://www.tradeogre.com](https://tradeogre.com/exchange/USDT-KAS)",
                            parse_mode="Markdown",
