@@ -758,6 +758,7 @@ async def buy(e):
                            f" *LBank* [https://lbank.com](https://www.lbank.com/trade/kas_usdt/)\n"
                            f" *MEXC* [https://mexc.com/](https://www.mexc.com/exchange/KAS_USDT)\n"
                            f" *BTSE* [https://www.btse.com/]\n"
+                           f" *XT* [https://www.xt.com/en/trade/kas_usdt]\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
                            f" *Bitmart* [https://www.bitmart.com/](https://www.bitmart.com/trade/en-US?symbol=KAS_USDT)\n"
                            f" *Bitpanda* [https://www.bitpanda.com/](https://www.bitpanda.com/en/prices/kaspa-kas)\n"
