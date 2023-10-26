@@ -568,7 +568,7 @@ async def wallet(e):
                                           '<b>OneKey</b>:\n'
                                           '  https://onekey.so/\n'
                                           '<b>Kaspium 🆕</b>:\n'
-                                          'https://kaspa.org/kaspium-v1-0-1-release/\n'
+                                          '  https://kaspa.org/kaspium-v1-0-1-release/\n'
                                           '<b>Zelcore</b>:\n'
                                           '  https://zelcore.io/\n'
                                           '<b>Chainge</b>:\n'
@@ -760,6 +760,7 @@ async def buy(e):
                            f" *BTSE* [https://www.btse.com/]\n"
                            f" *XT* [https://www.xt.com/en/trade/kas_usdt]\n"
                            f" *CoinEx* [https://www.coinex.com/](https://www.coinex.com/exchange/kas-usdt)\n"
+                           f" *Coinone* [https://coinone.co.kr/]\n"                           
                            f" *Bitmart* [https://www.bitmart.com/](https://www.bitmart.com/trade/en-US?symbol=KAS_USDT)\n"
                            f" *Bitpanda* [https://www.bitpanda.com/](https://www.bitpanda.com/en/prices/kaspa-kas)\n"
                            f" *EXMO.me* [https://www.exmo.me/](https://exmo.me/en/trade/KAS_USDT)\n"
